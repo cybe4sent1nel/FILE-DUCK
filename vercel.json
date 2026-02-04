@@ -1,6 +1,5 @@
 {
-  "version": 2,
-  "buildCommand": "pnpm run build",
+  "buildCommand": "cd apps/vue-app && pnpm run build",
   "outputDirectory": "apps/vue-app/dist",
   "installCommand": "pnpm install",
   "framework": null,
