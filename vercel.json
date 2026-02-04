@@ -1,13 +1,12 @@
 {
-  "buildCommand": "cd apps/vue-app && pnpm run build",
+  "buildCommand": "pnpm run build",
   "outputDirectory": "apps/vue-app/dist",
   "installCommand": "pnpm install",
-  "builds": [
-    {
-      "src": "apps/api/api/**/*.ts",
-      "use": "@vercel/node"
+  "functions": {
+    "apps/api/api/*.ts": {
+      "runtime": "@vercel/node@3.2.29"
     }
-  ],
+  },
   "routes": [
     {
       "src": "/api/(.*)",
