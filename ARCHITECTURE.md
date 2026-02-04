@@ -6,52 +6,180 @@ FileDuck is a globally distributed, secure file-sharing platform built with mode
 
 ## Architecture Diagram
 
+```mermaid
+graph TB
+    subgraph Client["🖥️ User Device"]
+        Browser["Web Browser<br/>Vue 3 App"]
+        SHA["SHA-256 Hash<br/>Computation"]
+        Encrypt["Optional E2E<br/>Encryption"]
+    end
+
+    subgraph Vercel["☁️ Vercel Edge Network"]
+        API["Serverless Functions<br/>(Node.js/TypeScript)"]
+        UploadMeta["/api/upload-meta"]
+        GitHubUpload["/api/github-upload"]
+        CompleteUpload["/api/complete-upload"]
+        Redeem["/api/redeem"]
+        Delete["/api/delete-file"]
+        Cleanup["/api/cleanup-expired"]
+        Health["/api/health"]
+    end
+
+    subgraph Storage["💾 Storage Layer"]
+        direction LR
+        GitHub["GitHub Releases<br/>(Primary Storage)<br/>• Compression >50MB<br/>• Chunking >1.9GB<br/>• Rate Limited"]
+        S3["AWS S3 / MinIO<br/>(Fallback Storage)<br/>• Quarantine Bucket<br/>• Public Bucket"]
+    end
+
+    subgraph Cache["⚡ Cache & Metadata"]
+        Redis["Upstash Redis<br/>• Metadata Store<br/>• TTL Auto-Expiry<br/>• Rate Limiting<br/>• Atomic Operations"]
+    end
+
+    subgraph Security["🛡️ Security Layer"]
+        Scanner["Malware Scanner<br/>• ClamAV (Local)<br/>• VirusTotal API<br/>• Quarantine Pipeline"]
+    end
+
+    subgraph CDN["🌐 CDN Layer"]
+        CloudFront["CloudFront/Cloudflare<br/>• Signed URLs<br/>• Edge Caching<br/>• DDoS Protection"]
+    end
+
+    Browser -->|1. Select File| SHA
+    SHA -->|2. Compute Hash| Browser
+    Browser -->|3. Optional| Encrypt
+    Browser -->|4. POST /upload-meta| UploadMeta
+    UploadMeta -->|5. Generate Share Code| Redis
+    Redis -->|6. Store Metadata| UploadMeta
+    UploadMeta -->|7. Return Presigned URLs| Browser
+    Browser -->|8. Upload File| GitHubUpload
+    GitHubUpload -->|9. Store (Compressed)| GitHub
+    GitHub -->|10. Fallback if needed| S3
+    Browser -->|11. POST /complete-upload| CompleteUpload
+    CompleteUpload -->|12. Trigger Scan| Scanner
+    Scanner -->|13. Download from Storage| GitHub
+    Scanner -->|14. Scan with ClamAV + VT| Scanner
+    Scanner -->|15. If Clean: Update Status| Redis
+    Scanner -->|16. If Malicious: Delete| GitHub
+    
+    %% Download Flow
+    Browser -->|17. POST /redeem| Redeem
+    Redeem -->|18. Check Rate Limit| Redis
+    Redeem -->|19. Get Metadata| Redis
+    Redis -->|20. Return File Info| Redeem
+    Redeem -->|21. Decrement Uses| Redis
+    Redeem -->|22. Generate Signed URL| CloudFront
+    CloudFront -->|23. Return Download URL| Browser
+    Browser -->|24. Download File| CloudFront
+    CloudFront -->|25. Fetch from Storage| GitHub
+    GitHub -->|26. Decompress if needed| CloudFront
+    CloudFront -->|27. Stream to User| Browser
+    
+    %% Delete Flow
+    Browser -->|28. DELETE request| Delete
+    Delete -->|29. Delete from Storage| GitHub
+    Delete -->|30. Delete Metadata| Redis
+    
+    %% Cleanup Flow
+    Cleanup -->|31. Get Expired Keys| Redis
+    Cleanup -->|32. Delete Files| GitHub
+    Cleanup -->|33. Remove Metadata| Redis
+
+    style Client fill:#e1f5ff
+    style Vercel fill:#fff4e6
+    style Storage fill:#f0f9ff
+    style Cache fill:#fef3c7
+    style Security fill:#fee2e2
+    style CDN fill:#dcfce7
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         USER DEVICE                                 │
-│  ┌──────────────┐                                                   │
-│  │   Browser    │  SHA-256 Hash Computation                         │
-│  │  Vue 3 App   │  Client-Side Encryption (Optional)                │
-│  └──────┬───────┘                                                   │
-└─────────┼─────────────────────────────────────────────────────────┘
-          │
-          │ HTTPS
-          ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                    VERCEL EDGE NETWORK                              │
-│  ┌──────────────────────────────────────────────────────────────┐  │
-│  │  Serverless Functions (Node.js/TypeScript)                   │  │
-│  │  • POST /api/upload-meta    - Generate presigned URLs        │  │
-│  │  • POST /api/complete-upload - Trigger malware scan          │  │
-│  │  • POST /api/redeem         - Validate & generate signed URL │  │
-│  │  • GET  /api/health         - Health check                   │  │
-│  └──────────────────┬───────────────────────────────────────────┘  │
-└─────────────────────┼─────────────────────────────────────────────┘
-                      │
-       ┌──────────────┼──────────────┐
-       │              │              │
-       ▼              ▼              ▼
-┌──────────┐   ┌──────────┐   ┌──────────────┐
-│ Upstash  │   │   AWS    │   │   Scanner    │
-│  Redis   │   │    S3    │   │   Service    │
-│          │   │          │   │              │
-│ Metadata │   │ Buckets: │   │  ClamAV +    │
-│ Store    │   │ • quarantine│  VirusTotal  │
-│          │   │ • public │   │              │
-│ TTL Auto │   │          │   │  Quarantine  │
-│ Expiry   │   │          │   │  Pipeline    │
-└──────────┘   └─────┬────┘   └──────────────┘
-                     │
-                     │ CDN
-                     ▼
-           ┌─────────────────┐
-           │  CloudFront or  │
-           │   Cloudflare    │
-           │                 │
-           │  • Signed URLs  │
-           │  • Edge Caching │
-           │  • DDoS Protect │
-           └─────────────────┘
+
+## Detailed Flow Diagrams
+
+### Upload Flow Sequence
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Browser
+    participant API as Vercel API
+    participant Redis
+    participant GitHub as GitHub Releases
+    participant Scanner
+
+    User->>Browser: Select File
+    Browser->>Browser: Compute SHA-256 Hash
+    Browser->>API: POST /upload-meta
+    API->>Redis: Generate Share Code
+    Redis-->>API: Store Metadata
+    API-->>Browser: Return Share Code
+    Browser->>API: POST /github-upload
+    API->>GitHub: Upload File (compressed if >50MB)
+    GitHub-->>API: Upload Complete
+    API-->>Browser: Success
+    Browser->>API: POST /complete-upload
+    API->>Scanner: Trigger Malware Scan
+    Scanner->>GitHub: Download File
+    Scanner->>Scanner: Scan with ClamAV + VirusTotal
+    alt File is Clean
+        Scanner->>Redis: Update Status: CLEAN
+    else File is Malicious
+        Scanner->>GitHub: Delete File
+        Scanner->>Redis: Update Status: MALICIOUS
+    end
+    Scanner-->>API: Scan Complete
+    API-->>Browser: File Ready / Quarantined
+```
+
+### Download Flow Sequence
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Browser
+    participant API as Vercel API
+    participant Redis
+    participant GitHub as GitHub Releases
+    participant CDN as CloudFront/CF
+
+    User->>Browser: Enter Share Code
+    Browser->>API: POST /redeem
+    API->>Redis: Check Rate Limit
+    Redis-->>API: OK
+    API->>Redis: Get Metadata
+    Redis-->>API: File Info
+    API->>Redis: Decrement Uses Left
+    API->>CDN: Generate Signed URL
+    CDN-->>API: Signed Download URL
+    API-->>Browser: Return Download URL + Metadata
+    User->>Browser: Click Download
+    Browser->>Browser: Show "Download Started" Alert
+    Browser->>CDN: GET Download URL
+    CDN->>GitHub: Fetch File
+    GitHub->>CDN: File Data (decompress if needed)
+    CDN->>Browser: Stream File
+    Browser->>Browser: Verify SHA-256 Checksum
+    Browser->>Browser: Save File to Disk
+```
+
+### Delete Flow Sequence
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Browser
+    participant API as Vercel API
+    participant Redis
+    participant GitHub as GitHub Releases
+
+    User->>Browser: Click Delete in History
+    Browser->>Browser: Show Confirmation Alert
+    User->>Browser: Confirm Deletion
+    Browser->>API: DELETE /delete-file
+    API->>GitHub: Delete File from Releases
+    GitHub-->>API: Deleted
+    API->>Redis: Delete Metadata
+    Redis-->>API: Deleted
+    API-->>Browser: Success
+    Browser->>Browser: Remove from Local History
+    Browser->>Browser: Show Success Alert
 ```
 
 ## Component Details

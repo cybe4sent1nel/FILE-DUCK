@@ -1,14 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { validateShareCode } from '@fileduck/shared';
-// @ts-ignore - lib files are compiled separately
-import { getMetadata, decrementUses, checkRateLimit, trackFailedAttempt } from '../../lib/redis';
-// @ts-ignore - lib files are compiled separately
-import { generateSignedCDNUrl } from '../../lib/cdn';
-// @ts-ignore - lib files are compiled separately
-import { getPresignedDownloadUrl } from '../../lib/s3';
+import { getMetadata, decrementUses, checkRateLimit, trackFailedAttempt } from '../lib/redis.js';
+import { generateSignedCDNUrl } from '../lib/cdn.js';
+import { getPresignedDownloadUrl } from '../lib/s3.js';
+import { verifyCaptcha } from '../lib/captcha.js';
 
 const CAPTCHA_THRESHOLD = 3;
 const USE_CDN = process.env.USE_CDN === 'true';
+const IS_PRODUCTION = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -40,22 +39,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Check if CAPTCHA is required
-    const failedAttempts = await trackFailedAttempt(ip);
-    if (failedAttempts >= CAPTCHA_THRESHOLD && !captchaToken) {
-      return res.status(403).json({
-        error: 'CAPTCHA verification required',
-        code: 'CAPTCHA_REQUIRED',
-      });
-    }
+    // Check if CAPTCHA is required (skip in development)
+    if (IS_PRODUCTION) {
+      const failedAttempts = await trackFailedAttempt(ip);
+      if (failedAttempts >= CAPTCHA_THRESHOLD && !captchaToken) {
+        return res.status(403).json({
+          error: 'CAPTCHA verification required',
+          code: 'CAPTCHA_REQUIRED',
+        });
+      }
 
-    // TODO: Verify CAPTCHA token with Google reCAPTCHA
-    // if (captchaToken) {
-    //   const isValid = await verifyCaptcha(captchaToken);
-    //   if (!isValid) {
-    //     return res.status(403).json({ error: 'Invalid CAPTCHA', code: 'CAPTCHA_REQUIRED' });
-    //   }
-    // }
+      // Verify CAPTCHA token with Google reCAPTCHA
+      if (captchaToken) {
+        const isValid = await verifyCaptcha(captchaToken);
+        if (!isValid) {
+          return res.status(403).json({ 
+            error: 'Invalid CAPTCHA', 
+            code: 'CAPTCHA_INVALID' 
+          });
+        }
+      }
+    } else {
+      console.log('⚠️ Development mode - CAPTCHA verification skipped');
+    }
 
     // Get metadata from Redis
     const metadata = await getMetadata(shareCode);
@@ -109,15 +115,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Generate download URL
-    let downloadUrl: string;
+    // SECURITY: Auto-delete if download limit reached
+    if (updatedMetadata.usesLeft <= 0 && metadata.githubReleaseId) {
+      try {
+        // Import cleanup function
+        const { cleanupSpecificFile } = await import('../lib/cleanup.js');
+        await cleanupSpecificFile(shareCode);
+        console.log(`Auto-deleted file ${metadata.filename} - download limit reached`);
+      } catch (error: any) {
+        console.error('Failed to auto-delete after download limit:', error);
+      }
+    }
 
-    if (USE_CDN) {
-      // Use CDN signed URL
-      downloadUrl = generateSignedCDNUrl(metadata.s3Key);
+    // Generate download URL based on storage type
+    let downloadUrl: string;
+    let fileContent: string | undefined;
+
+    if (metadata.downloadUrl) {
+      // GitHub storage - use direct download URL
+      downloadUrl = metadata.downloadUrl;
     } else {
-      // Use S3 presigned URL
-      downloadUrl = await getPresignedDownloadUrl(metadata.s3Key);
+      // For GitHub storage without downloadUrl (file was just uploaded)
+      // Return the file content directly from metadata if available
+      // Otherwise fall back to S3
+      if (USE_CDN) {
+        downloadUrl = generateSignedCDNUrl(metadata.s3Key);
+      } else {
+        downloadUrl = await getPresignedDownloadUrl(metadata.s3Key);
+      }
     }
 
     return res.status(200).json({
@@ -128,6 +153,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       mimeType: metadata.mimeType,
       usesLeft: updatedMetadata.usesLeft,
       expiresAt: metadata.expiresAt,
+      warning: updatedMetadata.usesLeft === 0 ? 'File will be deleted after this download' : undefined,
     });
   } catch (error: any) {
     console.error('Redeem error:', error);

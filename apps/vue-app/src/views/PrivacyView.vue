@@ -52,7 +52,7 @@
         <p class="mb-4">We implement industry-standard security measures:</p>
         <ul class="list-disc pl-6 mb-4 space-y-2">
           <li>HTTPS encryption for all connections</li>
-          <li>Malware scanning (ClamAV + VirusTotal)</li>
+          <li>Multi-engine malware scanning</li>
           <li>Optional client-side encryption</li>
           <li>Secure, signed CDN URLs</li>
         </ul>

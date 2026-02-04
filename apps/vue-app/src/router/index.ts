@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import UploadView from '../views/UploadView.vue';
 import DownloadView from '../views/DownloadView.vue';
+import HistoryView from '../views/HistoryView.vue';
 import PrivacyView from '../views/PrivacyView.vue';
 import TermsView from '../views/TermsView.vue';
 import NotFoundView from '../views/NotFoundView.vue';
@@ -20,6 +21,11 @@ const routes = [
     path: '/d/:code',
     name: 'DirectDownload',
     component: DownloadView,
+  },
+  {
+    path: '/history',
+    name: 'History',
+    component: HistoryView,
   },
   {
     path: '/privacy',

@@ -1,11 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { generateShareCode, CONSTANTS } from '@fileduck/shared';
-// @ts-ignore - lib files are compiled separately
-import { storeMetadata } from '../../lib/redis';
-// @ts-ignore - lib files are compiled separately
-import { createMultipartUpload } from '../../lib/s3';
-// @ts-ignore - lib files are compiled separately
-import { checkRateLimit } from '../../lib/redis';
+import { storeMetadata } from '../lib/redis.js';
+import { createMultipartUpload } from '../lib/s3.js';
+import { checkRateLimit } from '../lib/redis.js';
+
+// Default to GitHub storage (set to false to use S3)
+const USE_GITHUB_STORAGE = process.env.USE_GITHUB_STORAGE !== 'false';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -16,14 +16,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Get client IP
     const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || 'unknown';
 
-    // Check rate limit
-    const rateLimit = await checkRateLimit(ip);
-    if (!rateLimit.allowed) {
-      return res.status(429).json({
-        error: 'Too many requests',
-        code: 'RATE_LIMITED',
-        resetAt: rateLimit.resetAt,
-      });
+    // Check rate limit (graceful fallback if Redis unavailable)
+    try {
+      const rateLimit = await checkRateLimit(ip);
+      if (!rateLimit.allowed) {
+        return res.status(429).json({
+          error: 'Too many requests',
+          code: 'RATE_LIMITED',
+          resetAt: rateLimit.resetAt,
+        });
+      }
+    } catch (rateLimitError) {
+      console.warn('⚠️ Rate limit check failed (Redis unavailable):', rateLimitError);
+      // Continue without rate limiting in development
     }
 
     const { filename, size, sha256, mimeType, ttlHours, maxUses, encrypted } = req.body;
@@ -47,44 +52,63 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Generate share code
     const shareCode = generateShareCode();
     const now = Date.now();
-    const ttl = (ttlHours || CONSTANTS.DEFAULT_TTL_HOURS) * 3600;
+    
+    // ENFORCE MAXIMUM 7-DAY TTL
+    const MAX_TTL_HOURS = 7 * 24; // 7 days max
+    const requestedTTL = ttlHours || CONSTANTS.DEFAULT_TTL_HOURS;
+    const enforcedTTL = Math.min(requestedTTL, MAX_TTL_HOURS);
+    
+    const ttl = enforcedTTL * 3600;
     const expiresAt = now + ttl * 1000;
 
-    // Create multipart upload
-    const { uploadId, presignedUrls } = await createMultipartUpload(filename, size);
+    let uploadId = '';
+    let presignedUrls: string[] = [];
     const s3Key = `quarantine/${now}-${filename}`;
 
-    // Store metadata in Redis
-    await storeMetadata(
-      shareCode,
-      {
-        id: shareCode,
-        shareCode,
-        filename,
-        size,
-        sha256,
-        mimeType,
-        uploadedAt: now,
-        expiresAt,
-        usesLeft: maxUses || CONSTANTS.DEFAULT_MAX_USES,
-        maxUses: maxUses || CONSTANTS.DEFAULT_MAX_USES,
-        s3Key,
-        scanStatus: 'pending',
-        encrypted: encrypted || false,
-      },
-      ttl
-    );
+    // Only create multipart upload if NOT using GitHub storage
+    if (!USE_GITHUB_STORAGE) {
+      const uploadData = await createMultipartUpload(filename, size);
+      uploadId = uploadData.uploadId;
+      presignedUrls = uploadData.presignedUrls;
+    }
 
-    // Trigger malware scan asynchronously (webhook or queue)
-    // This would be implemented via a separate background job
-    // For now, we'll add a TODO
-    // TODO: Trigger malware scan via SQS or webhook
+    // Store metadata in Redis (required for downloads)
+    try {
+      await storeMetadata(
+        shareCode,
+        {
+          id: shareCode,
+          shareCode,
+          filename,
+          size,
+          sha256,
+          mimeType,
+          uploadedAt: now,
+          expiresAt,
+          usesLeft: maxUses || CONSTANTS.DEFAULT_MAX_USES,
+          maxUses: maxUses || CONSTANTS.DEFAULT_MAX_USES,
+          s3Key,
+          scanStatus: 'pending',
+          encrypted: encrypted || false,
+        },
+        ttl
+      );
+    } catch (redisError) {
+      console.error('❌ Redis metadata storage failed:', redisError);
+      // In development, continue without Redis
+      // In production, this will fail (as it should)
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw redisError;
+      }
+      console.warn('⚠️ Continuing without Redis (development mode)');
+    }
 
     return res.status(200).json({
       shareCode,
-      uploadUrls: presignedUrls,
-      uploadId,
+      uploadUrls: USE_GITHUB_STORAGE ? [] : presignedUrls,
+      uploadId: USE_GITHUB_STORAGE ? '' : uploadId,
       expiresAt,
+      useGitHub: USE_GITHUB_STORAGE,
     });
   } catch (error: any) {
     console.error('Upload meta error:', error);

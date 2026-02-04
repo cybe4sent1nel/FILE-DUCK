@@ -15,6 +15,39 @@ const api = axios.create({
   },
 });
 
+export interface ScanFileResponse {
+  clean: boolean;
+  decision: 'clean' | 'infected' | 'suspicious';
+  clamav: {
+    infected: boolean;
+    virus?: string;
+  };
+  virustotal?: {
+    positives: number;
+    total: number;
+  };
+  score: number;
+}
+
+export async function scanFileBeforeUpload(
+  file: File,
+  sha256: string
+): Promise<ScanFileResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('sha256', sha256);
+
+  // Scanner service runs on port 4000
+  const scannerUrl = import.meta.env.VITE_SCANNER_URL || 'http://localhost:4000';
+  
+  const response = await axios.post(`${scannerUrl}/scan`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+}
+
 export async function uploadFileMeta(
   request: UploadMetaRequest
 ): Promise<UploadMetaResponse> {
@@ -28,6 +61,14 @@ export async function uploadToS3(
   uploadId: string,
   onProgress?: (progress: number) => void
 ): Promise<void> {
+  // If no upload URLs provided, it means we're using GitHub storage (server-side upload)
+  if (!uploadUrls || uploadUrls.length === 0) {
+    // GitHub storage is handled server-side in complete-upload
+    // Just report 100% progress immediately
+    onProgress?.(100);
+    return;
+  }
+
   const chunkSize = 100 * 1024 * 1024; // 100 MB chunks
   const chunks = Math.ceil(file.size / chunkSize);
   const parts: { ETag: string; PartNumber: number }[] = [];
@@ -68,5 +109,12 @@ export async function redeemShareCode(request: RedeemRequest): Promise<RedeemRes
 
 export async function healthCheck(): Promise<{ status: string }> {
   const response = await api.get('/health');
+  return response.data;
+}
+
+export async function deleteFile(shareCode: string): Promise<{ success: boolean; message: string }> {
+  const response = await api.delete('/delete-file', {
+    data: { shareCode },
+  });
   return response.data;
 }

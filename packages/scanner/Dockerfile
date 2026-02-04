@@ -13,23 +13,35 @@ RUN freshclam
 # Create app directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Install pnpm globally
+RUN npm install -g pnpm
+
+# Copy workspace files
+COPY pnpm-workspace.yaml ./
+COPY package.json ./
 COPY pnpm-lock.yaml ./
 
-# Install pnpm and dependencies
-RUN npm install -g pnpm
-RUN pnpm install --frozen-lockfile
+# Copy shared package
+COPY packages/shared ./packages/shared
 
-# Copy source code
-COPY . .
+# Copy scanner package
+COPY packages/scanner/package*.json ./packages/scanner/
+COPY packages/scanner/tsconfig.json ./packages/scanner/
+COPY packages/scanner/src ./packages/scanner/src
+
+# Install dependencies from workspace root
+RUN pnpm install --filter @fileduck/scanner --filter @fileduck/shared
 
 # Build TypeScript
-RUN pnpm build
+WORKDIR /app/packages/scanner
+RUN pnpm exec tsc
 
-# Start ClamAV daemon and scanner service
-COPY docker-entrypoint.sh /
+# Copy entrypoint script
+COPY packages/scanner/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
+
+# Set working directory
+WORKDIR /app/packages/scanner
 
 EXPOSE 4000
 

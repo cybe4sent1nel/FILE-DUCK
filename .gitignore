@@ -8,9 +8,13 @@ build/
 .next/
 out/
 
-# Environment
+# Environment & Secrets
 .env
 .env*.local
+VERCEL_ENV.txt
+**/credentials.json
+**/*secret*
+**/*credentials*
 
 # IDE
 .vscode/

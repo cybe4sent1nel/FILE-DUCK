@@ -1,13 +1,21 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import multer from 'multer';
+import cors from 'cors';
 import { initScanner, scanFile } from './scanner';
+import { scanFileWithClamAV } from './clamav';
 import { Redis } from '@upstash/redis';
 import { moveToPublicBucket, deleteFromQuarantine } from './s3-ops';
+import fs from 'fs/promises';
 
 dotenv.config();
 
 const app = express();
+app.use(cors()); // Enable CORS for all routes
 app.use(express.json());
+
+// Configure multer for file uploads
+const upload = multer({ dest: '/tmp/' });
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_URL!,
@@ -21,8 +29,47 @@ app.get('/health', (req, res) => {
   res.json({ status: 'healthy', service: 'malware-scanner' });
 });
 
-// Scan endpoint (called by API or queue processor)
-app.post('/scan', async (req, res) => {
+// Pre-upload scan endpoint (for files before they're uploaded to S3)
+app.post('/scan', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file provided' });
+    }
+
+    console.log(`Pre-upload scan for file: ${req.file.originalname}`);
+
+    // Scan with ClamAV
+    const clamavResult = await scanFileWithClamAV(req.file.path);
+
+    // Cleanup temp file
+    await fs.unlink(req.file.path).catch(console.error);
+
+    // Build response
+    const result = {
+      clean: !clamavResult.infected,
+      decision: clamavResult.infected ? 'infected' : 'clean',
+      clamav: clamavResult,
+      score: clamavResult.infected ? 100 : 0,
+    };
+
+    return res.json(result);
+  } catch (error: any) {
+    console.error('Pre-upload scan error:', error);
+    
+    // Cleanup temp file on error
+    if (req.file) {
+      await fs.unlink(req.file.path).catch(console.error);
+    }
+
+    return res.status(500).json({
+      error: 'Scan failed',
+      details: error.message,
+    });
+  }
+});
+
+// Post-upload scan endpoint (called by API or queue processor for files already in S3)
+app.post('/scan-s3', async (req, res) => {
   try {
     const { shareCode, s3Key, sha256 } = req.body;
 

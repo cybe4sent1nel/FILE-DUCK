@@ -52,8 +52,8 @@ services:
   # Scanner Service
   scanner:
     build:
-      context: ./packages/scanner
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./packages/scanner/Dockerfile
     container_name: fileduck-scanner
     ports:
       - "4000:4000"
