@@ -77,11 +77,11 @@ flowchart TD
     C -->|3. Clean?| D{Scan Result}
     D -->|Clean| E[Calculate SHA-256]
     D -->|Infected| F[Show Warning - Quarantine]
-    E -->|4. Request Upload| G[Vercel API /upload-meta]
+    E -->|4. Request Upload| G[Vercel API upload-meta]
     G -->|5. Generate Share Code| H[Upstash Redis]
     H -->|Store Metadata + TTL| G
     G -->|6. Return Share Code| B
-    B -->|7. Upload File Data| I[/api/github-upload]
+    B -->|7. Upload File Data| I[API github-upload]
     I -->|8. Create GitHub Release| J[GitHub Releases Storage]
     J -->|9. Return Download URL| I
     I -->|10. Update Metadata| H
@@ -89,9 +89,8 @@ flowchart TD
     I -->|Success| B
     B -->|Display Share Code| A
     
-    %% Download Flow
     K[Recipient] -->|1. Enter Share Code| L[Vue 3 Frontend]
-    L -->|2. Redeem Code| M[Vercel API /redeem]
+    L -->|2. Redeem Code| M[Vercel API redeem]
     M -->|3. Get Metadata| H
     H -->|Return File Info| M
     M -->|4. Check Uses Left| N{Uses > 0?}
@@ -102,15 +101,13 @@ flowchart TD
     L -->|6. Download File| J
     J -->|File Data| K
     
-    %% Cleanup Flow
-    Q[Vercel Cron] -->|Daily| R[/api/cleanup-expired]
+    Q[Vercel Cron] -->|Daily| R[API cleanup-expired]
     R -->|Scan Redis| H
     H -->|Expired Keys| R
     R -->|Delete Release| J
     R -->|Delete Metadata| H
     
-    %% Delete Flow
-    S[User History] -->|Delete File| T[/api/delete-file]
+    S[User History] -->|Delete File| T[API delete-file]
     T -->|Remove Release| J
     T -->|Remove Metadata| H
     T -->|Success| S
