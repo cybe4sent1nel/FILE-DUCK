@@ -22,7 +22,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/apps/vue-app/dist/$1"
+      "dest": "/apps/vue-app/dist/index.html"
     }
   ],
   "crons": [
