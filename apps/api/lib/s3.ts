@@ -87,7 +87,7 @@ export async function completeMultipartUpload(
     },
   });
 
-  await s3Client.send(command);
+  await (s3Client as any).send(command);
 }
 
 export async function moveToPublicBucket(quarantineKey: string): Promise<string> {
