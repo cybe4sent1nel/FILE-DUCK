@@ -3,7 +3,7 @@
     <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border-2 border-yellow-100">
       <div class="flex items-center justify-center mb-8">
         <img src="/logo.png" alt="FileDuck" class="h-16 w-16 mr-4 transform hover:rotate-12 transition-transform" />
-        <h1 class="text-4xl font-bold text-center bg-gradient-to-r from-yellow-600 to-purple-500 bg-clip-text text-transparent">
+        <h1 class="text-4xl font-bold text-center bg-gradient-to-r from-yellow-600 to-purple-500 bg-clip-text text-transparent pb-1">
           Download File
         </h1>
       </div>

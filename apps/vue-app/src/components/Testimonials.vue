@@ -12,7 +12,7 @@
           />
         </div>
         
-        <h2 class="text-5xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-lemon-400 bg-clip-text text-transparent">
+        <h2 class="text-5xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-lemon-400 bg-clip-text text-transparent pb-2">
           What Our Users Say
         </h2>
         <p class="text-xl text-gray-600">

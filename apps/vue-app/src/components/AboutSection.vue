@@ -14,7 +14,7 @@
 
         <!-- Right: Content -->
         <div>
-          <h2 class="text-5xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-lemon-400 bg-clip-text text-transparent">
+          <h2 class="text-5xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-lemon-400 bg-clip-text text-transparent pb-2">
             About FileDuck
           </h2>
           <p class="text-xl text-gray-700 mb-6 leading-relaxed">

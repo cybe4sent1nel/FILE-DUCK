@@ -7,6 +7,60 @@ FileDuck is a globally distributed, secure file-sharing platform built with mode
 ## Architecture Diagram
 
 ```mermaid
+flowchart TD
+    A[User Browser] -->|1. Upload File| B[Vue 3 Frontend]
+    B -->|2. Pre-scan| C[ClamAV + VirusTotal]
+    C -->|3. Clean?| D{Scan Result}
+    D -->|Clean| E[Calculate SHA-256]
+    D -->|Infected| F[Show Warning - Quarantine]
+    E -->|4. Request Upload| G[Vercel API /upload-meta]
+    G -->|5. Generate Share Code| H[Upstash Redis]
+    H -->|Store Metadata + TTL| G
+    G -->|6. Return Share Code| B
+    B -->|7. Upload File Data| I[/api/github-upload]
+    I -->|8. Create GitHub Release| J[GitHub Releases Storage]
+    J -->|9. Return Download URL| I
+    I -->|10. Update Metadata| H
+    H -->|Store downloadUrl + releaseId| I
+    I -->|Success| B
+    B -->|Display Share Code| A
+    
+    %% Download Flow
+    K[Recipient] -->|1. Enter Share Code| L[Vue 3 Frontend]
+    L -->|2. Redeem Code| M[Vercel API /redeem]
+    M -->|3. Get Metadata| H
+    H -->|Return File Info| M
+    M -->|4. Check Uses Left| N{Uses > 0?}
+    N -->|Yes| O[Decrement Counter]
+    N -->|No| P[Return Error]
+    O -->|5. Return Download URL| M
+    M -->|GitHub CDN URL| L
+    L -->|6. Download File| J
+    J -->|File Data| K
+    
+    %% Cleanup Flow
+    Q[Vercel Cron] -->|Daily| R[/api/cleanup-expired]
+    R -->|Scan Redis| H
+    H -->|Expired Keys| R
+    R -->|Delete Release| J
+    R -->|Delete Metadata| H
+    
+    %% Delete Flow
+    S[User History] -->|Delete File| T[/api/delete-file]
+    T -->|Remove Release| J
+    T -->|Remove Metadata| H
+    T -->|Success| S
+    
+    style B fill:#9333ea,color:#fff
+    style G fill:#3b82f6,color:#fff
+    style H fill:#ef4444,color:#fff
+    style J fill:#22c55e,color:#fff
+    style C fill:#f59e0b,color:#fff
+```
+
+## System Components Architecture
+
+```mermaid
 graph TB
     subgraph Client["🖥️ User Device"]
         Browser["Web Browser<br/>Vue 3 App"]

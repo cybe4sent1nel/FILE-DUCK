@@ -1,7 +1,7 @@
 <template>
   <div class="max-w-5xl mx-auto">
     <!-- Hero Section -->
-    <div class="text-center mb-16 max-w-4xl mx-auto -mt-4">
+    <div class="text-center mb-12 max-w-4xl mx-auto -mt-4">
       <!-- Designer Cat Animation -->
       <div class="flex justify-center mb-4">
         <Vue3Lottie
@@ -12,23 +12,29 @@
         />
       </div>
       
-      <div class="flex flex-col md:flex-row items-center justify-center gap-6 mb-6">
+      <div class="flex flex-col md:flex-row items-center justify-center gap-6 mb-4">
         <img src="/logo.png" alt="FileDuck Logo" class="h-32 md:h-40 w-32 md:w-40 object-contain" />
-        <h1 class="text-5xl md:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-purple-400 via-purple-300 to-lemon-400 bg-clip-text text-transparent leading-tight text-center md:text-left">
+        <h1 class="text-5xl md:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-purple-400 via-purple-300 to-lemon-400 bg-clip-text text-transparent leading-tight text-center md:text-left pb-2">
           Share Files Securely
         </h1>
       </div>
-      <p class="text-xl text-gray-600 mb-4 max-w-2xl mx-auto leading-relaxed">
+
+      <!-- Scanning Animation Component -->
+      <div class="-mt-4 mb-3">
+        <ScanningAnimation />
+      </div>
+      
+      <p class="text-xl text-gray-600 mb-3 max-w-2xl mx-auto leading-relaxed">
         Upload, scan, and share files with enterprise-grade security. Protected by AI-powered malware detection and end-to-end encryption.
       </p>
-      <div class="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-xl p-4 mb-8 max-w-2xl mx-auto">
+      <div class="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-xl p-4 mb-6 max-w-2xl mx-auto">
         <p class="text-sm text-gray-700 flex items-center justify-center">
           <LockIcon class="w-5 h-5 mr-2 text-green-600" />
           <strong class="text-green-700 mr-1">End-to-End Encrypted:</strong>
           Your data is encrypted during transfer. Only sender and receiver can access the content.
         </p>
       </div>
-      <div class="flex flex-wrap justify-center gap-4 mb-12">
+      <div class="flex flex-wrap justify-center gap-4 mb-8">
         <div class="flex items-center space-x-2 bg-white px-5 py-3 rounded-full shadow-sm border border-purple-100">
           <ShieldCheckIcon class="w-5 h-5 text-purple-400" />
           <span class="text-sm font-medium text-gray-700">Malware Protected</span>
@@ -433,6 +439,7 @@ import HowItWorks from '../components/HowItWorks.vue';
 import Testimonials from '../components/Testimonials.vue';
 import AboutSection from '../components/AboutSection.vue';
 import LiveActivityTracker from '../components/LiveActivityTracker.vue';
+import ScanningAnimation from '../components/ScanningAnimation.vue';
 import { useNotifications } from '../composables/useNotifications';
 import TrustedBy from '../components/TrustedBy.vue';
 import CTASection from '../components/CTASection.vue';

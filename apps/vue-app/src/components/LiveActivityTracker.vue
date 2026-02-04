@@ -1,7 +1,16 @@
 <template>
   <div class="bg-gradient-to-r from-purple-50 to-yellow-50 rounded-2xl p-6 shadow-lg border-2 border-purple-200">
     <div class="text-center mb-6">
-      <h3 class="text-2xl font-bold text-purple-800 mb-2">🔥 Live Activity</h3>
+      <div class="flex items-center justify-center mb-2">
+        <Vue3Lottie
+          :animationData="GraphicChartAnimation"
+          :height="60"
+          :width="60"
+          :loop="true"
+          :autoplay="true"
+        />
+        <h3 class="text-2xl font-bold text-purple-800 ml-2">Live Activity</h3>
+      </div>
       <p class="text-sm text-gray-600">Real-time file sharing happening now</p>
     </div>
 
@@ -117,6 +126,7 @@ import {
 } from 'lucide-vue-next';
 import { formatFileSize } from '@fileduck/shared';
 import EarthAnimation from '../../../../animations/Earth globe rotating with Seamless loop animation.json';
+import GraphicChartAnimation from '../../../../animations/Graphic Chart.json';
 
 interface LiveStats {
   uploadsToday: number;
@@ -152,8 +162,9 @@ const sampleExtensions = ['pdf', 'zip', 'jpg', 'docx', 'mp4', 'sql', 'psd', 'gz'
 
 const generateRedactedName = () => {
   const ext = sampleExtensions[Math.floor(Math.random() * sampleExtensions.length)];
-  const token = Math.random().toString(36).slice(2, 8);
-  return `file-${token}.${ext}`;
+  const maskLength = 5 + Math.floor(Math.random() * 5); // Random length 5-10
+  const mask = '●'.repeat(maskLength);
+  return `${mask}.${ext}`;
 };
 
 const updateStats = () => {
