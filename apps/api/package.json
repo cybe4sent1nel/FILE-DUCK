@@ -12,14 +12,14 @@
     "clean": "rm -rf dist .vercel"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.485.0",
-    "@aws-sdk/s3-request-presigner": "^3.485.0",
+    "@aws-sdk/client-s3": "^3.981.0",
+    "@aws-sdk/s3-request-presigner": "^3.981.0",
     "@fileduck/shared": "workspace:*",
     "@octokit/rest": "^22.0.1",
-    "@upstash/redis": "^1.28.1",
-    "axios": "^1.6.5",
+    "@upstash/redis": "^1.36.2",
+    "axios": "^1.13.4",
     "dotenv": "^16.6.1",
-    "express": "^4.18.2"
+    "express": "^4.22.1"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

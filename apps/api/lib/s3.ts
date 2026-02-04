@@ -41,7 +41,7 @@ export async function createMultipartUpload(
     ContentType: 'application/octet-stream',
   });
 
-  const { UploadId } = await s3Client.send(createCommand);
+  const { UploadId } = await (s3Client as any).send(createCommand);
   
   if (!UploadId) {
     throw new Error('Failed to create multipart upload');
@@ -100,7 +100,7 @@ export async function moveToPublicBucket(quarantineKey: string): Promise<string>
     Key: publicKey,
   });
 
-  await s3Client.send(copyCommand);
+  await (s3Client as any).send(copyCommand);
 
   // Delete from quarantine
   const deleteCommand = new DeleteObjectCommand({
@@ -108,7 +108,7 @@ export async function moveToPublicBucket(quarantineKey: string): Promise<string>
     Key: quarantineKey,
   });
 
-  await s3Client.send(deleteCommand);
+  await (s3Client as any).send(deleteCommand);
 
   return publicKey;
 }
@@ -119,7 +119,7 @@ export async function deleteFromQuarantine(key: string): Promise<void> {
     Key: key,
   });
 
-  await s3Client.send(command);
+  await (s3Client as any).send(command);
 }
 
 export async function getPresignedDownloadUrl(key: string): Promise<string> {
