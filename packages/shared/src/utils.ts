@@ -22,8 +22,8 @@ export function computeSHA256(file: any): Promise<string> {
       reject(new Error('computeSHA256 can only be used in browser environment'));
       return;
     }
-    const reader = new FileReader();
-    reader.onload = async (e: ProgressEvent<FileReader>) => {
+    const reader = new (window as any).FileReader();
+    reader.onload = async (e: any) => {
       try {
         const buffer = e.target?.result as ArrayBuffer;
         const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
