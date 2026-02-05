@@ -3,11 +3,19 @@ import axios from 'axios';
 import formidable from 'formidable';
 import fs from 'fs';
 import crypto from 'crypto';
+import FormData from 'form-data';
 
 const VIRUSTOTAL_API_KEY = process.env.VIRUSTOTAL_API_KEY || '';
 const VIRUSTOTAL_API_URL = 'https://www.virustotal.com/api/v3';
 const VIRUSTOTAL_THRESHOLD = 3; // If 3+ engines detect malware, flag as infected
-const MAX_SCAN_SIZE = 32 * 1024 * 1024; // 32MB - VirusTotal free tier limit
+const VIRUSTOTAL_MAX_SIZE = 32 * 1024 * 1024; // 32MB - VirusTotal free tier limit
+
+const METADEFENDER_API_KEY = process.env.METADEFENDER_API_KEY || '';
+const METADEFENDER_API_URL = 'https://api.metadefender.com/v4';
+const METADEFENDER_MAX_SIZE = 100 * 1024 * 1024; // 100MB - MetaDefender free tier limit
+
+// Railway scanner service
+const RAILWAY_SCANNER_URL = 'https://fileduck-scanner-production.up.railway.app';
 
 interface ScanResponse {
   clean: boolean;
@@ -82,13 +90,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Check file size (VirusTotal free API limit)
-    if (file.size > 32 * 1024 * 1024) {
+    // Check file size and determine which scanner to use
+    if (file.size > METADEFENDER_MAX_SIZE) {
       fs.unlinkSync(file.filepath);
       return res.status(413).json({ 
         error: 'File too large for scanning',
-        message: 'VirusTotal free API supports files up to 32MB. Larger files will be uploaded without scanning.',
-        maxSize: 32 * 1024 * 1024
+        message: 'Maximum file size for scanning is 100MB. Larger files will be uploaded without scanning.',
+        maxSize: METADEFENDER_MAX_SIZE
       });
     }
 
@@ -102,21 +110,76 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'SHA256 hash mismatch' });
     }
 
-    // Scan with VirusTotal
-    console.log('Scanning file with VirusTotal...');
-    const vtResult = await scanWithVirusTotal(hash, file.filepath);
+    // Try Railway scanner service first
+    try {
+      // Forward file to Railway scanner service
+      const formData = new FormData();
+      formData.append('file', fs.createReadStream(file.filepath), {
+        filename: file.originalFilename || 'file',
+        contentType: file.mimetype || 'application/octet-stream'
+      });
+      
+      if (sha256Provided) {
+        formData.append('sha256', sha256Provided);
+      }
+
+      console.log(`Forwarding file to Railway scanner service...`);
+      
+      const scannerResponse = await axios.post(`${RAILWAY_SCANNER_URL}/scan`, formData, {
+        headers: {
+          ...formData.getHeaders(),
+        },
+        timeout: 300000, // 5 minutes timeout for large files
+      });
+
+      // Cleanup temp file
+      fs.unlinkSync(file.filepath);
+
+      // Return the scanner response
+      return res.status(200).json(scannerResponse.data);
+
+    } catch (scannerError: any) {
+      console.error('Railway scanner error:', scannerError);
+      
+      // If Railway scanner fails, fall back to local scanning
+      console.log('Falling back to local scanning...');
+    }
+
+    // Fallback: Determine which scanner to use based on file size
+    let vtResult = null;
+    let mdResult = null;
+    
+    if (file.size <= VIRUSTOTAL_MAX_SIZE) {
+      // Use VirusTotal for files ≤32MB
+      console.log('Scanning file with VirusTotal...');
+      vtResult = await scanWithVirusTotal(hash, file.filepath);
+    } else {
+      // Use MetaDefender for files 32MB-100MB
+      console.log('Scanning file with MetaDefender...');
+      mdResult = await scanWithMetaDefender(file.filepath, hash);
+    }
 
     // Cleanup temp file
     fs.unlinkSync(file.filepath);
 
     // Determine decision
     let decision: 'clean' | 'infected' | 'suspicious' = 'clean';
-    let score = vtResult?.positives || 0;
+    let score = 0;
 
-    if (vtResult && vtResult.positives >= VIRUSTOTAL_THRESHOLD) {
-      decision = 'infected';
-    } else if (vtResult && vtResult.positives > 0) {
-      decision = 'suspicious';
+    if (vtResult) {
+      score = vtResult.positives;
+      if (vtResult.positives >= VIRUSTOTAL_THRESHOLD) {
+        decision = 'infected';
+      } else if (vtResult.positives > 0) {
+        decision = 'suspicious';
+      }
+    } else if (mdResult) {
+      score = mdResult.positives;
+      if (mdResult.positives >= 3) { // Similar threshold
+        decision = 'infected';
+      } else if (mdResult.positives > 0) {
+        decision = 'suspicious';
+      }
     }
 
     const response: ScanResponse = {
@@ -128,6 +191,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       virustotal: vtResult ? {
         positives: vtResult.positives,
         total: vtResult.total,
+      } : mdResult ? {
+        positives: mdResult.positives,
+        total: mdResult.total,
       } : undefined,
       score,
     };
@@ -267,5 +333,129 @@ async function pollAnalysis(analysisId: string, timeoutMs: number = 30000): Prom
 
   // Timeout reached
   console.warn('VirusTotal analysis timeout');
+  return null;
+}
+
+async function scanWithMetaDefender(filePath: string, sha256: string): Promise<{ positives: number; total: number } | null> {
+  if (!METADEFENDER_API_KEY) {
+    console.warn('MetaDefender API key not configured');
+    return null;
+  }
+
+  try {
+    // First, check if file hash exists in MetaDefender database
+    const hashReport = await getMetaDefenderHashReport(sha256);
+    if (hashReport) {
+      console.log('File found in MetaDefender hash database');
+      return hashReport;
+    }
+
+    // Upload file for scanning
+    console.log('Uploading file to MetaDefender...');
+    const uploadResult = await uploadFileToMetaDefender(filePath);
+    if (!uploadResult) {
+      return null;
+    }
+
+    // Poll for results
+    console.log('Polling MetaDefender for results...');
+    const result = await pollMetaDefenderResults(uploadResult.data_id);
+    return result;
+  } catch (error: any) {
+    console.error('MetaDefender scan error:', error);
+    return null;
+  }
+}
+
+async function getMetaDefenderHashReport(sha256: string): Promise<{ positives: number; total: number } | null> {
+  try {
+    const response = await axios.get(`${METADEFENDER_API_URL}/hash/${sha256}`, {
+      headers: {
+        'apikey': METADEFENDER_API_KEY,
+      },
+      timeout: 10000,
+    });
+
+    const scanResults = response.data.scan_results;
+    if (scanResults && scanResults.scan_all_result_i !== undefined) {
+      const totalEngines = scanResults.total_avs || 0;
+      const detectedEngines = scanResults.total_detected_avs || 0;
+      
+      return {
+        positives: detectedEngines,
+        total: totalEngines,
+      };
+    }
+
+    return null;
+  } catch (error: any) {
+    if (error.response?.status === 404) {
+      // Hash not found, need to upload file
+      return null;
+    }
+    console.error('MetaDefender hash lookup error:', error);
+    return null;
+  }
+}
+
+async function uploadFileToMetaDefender(filePath: string): Promise<{ data_id: string } | null> {
+  try {
+    const fileBuffer = fs.readFileSync(filePath);
+    
+    const response = await axios.post(`${METADEFENDER_API_URL}/file`, fileBuffer, {
+      headers: {
+        'apikey': METADEFENDER_API_KEY,
+        'content-type': 'application/octet-stream',
+      },
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
+      timeout: 120000, // 2 minutes for upload
+    });
+
+    return {
+      data_id: response.data.data_id,
+    };
+  } catch (error: any) {
+    console.error('MetaDefender upload error:', error);
+    return null;
+  }
+}
+
+async function pollMetaDefenderResults(dataId: string, timeoutMs: number = 60000): Promise<{ positives: number; total: number } | null> {
+  const startTime = Date.now();
+  const pollInterval = 3000; // 3 seconds
+
+  while (Date.now() - startTime < timeoutMs) {
+    try {
+      const response = await axios.get(`${METADEFENDER_API_URL}/file/${dataId}`, {
+        headers: {
+          'apikey': METADEFENDER_API_KEY,
+        },
+        timeout: 10000,
+      });
+
+      const scanResults = response.data.scan_results;
+      const progress = scanResults?.progress_percentage;
+
+      if (progress === 100) {
+        const totalEngines = scanResults.total_avs || 0;
+        const detectedEngines = scanResults.total_detected_avs || 0;
+        
+        return {
+          positives: detectedEngines,
+          total: totalEngines,
+        };
+      }
+
+      // Wait before polling again
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+    } catch (error: any) {
+      console.error('MetaDefender polling error:', error);
+      return null;
+    }
+  }
+
+  // Timeout reached
+  console.warn('MetaDefender scan timeout');
   return null;
 }

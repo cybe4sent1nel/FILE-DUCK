@@ -37,20 +37,31 @@ interface FileMetadata {
  */
 export async function cleanupSpecificFile(shareCode: string): Promise<boolean> {
   try {
+    console.log(`🔍 Looking for file with shareCode: ${shareCode}`);
+    
     // Try both key formats for backward compatibility
     let metadata = await redis.get<FileMetadata>(shareCode);
     
     if (!metadata) {
       metadata = await redis.get<FileMetadata>(`file:${shareCode}`);
+      console.log(`📋 Tried file:${shareCode} format, found:`, !!metadata);
     }
     
     if (!metadata || metadata.isDeleted) {
-      console.log(`File ${shareCode} already deleted or not found`);
+      console.log(`❌ File ${shareCode} already deleted or not found`);
       return false;
     }
 
+    console.log(`📦 File metadata:`, {
+      filename: metadata.filename,
+      githubReleaseId: metadata.githubReleaseId,
+      isDeleted: metadata.isDeleted
+    });
+
     if (metadata.githubReleaseId) {
       try {
+        console.log(`🗑️ Attempting to delete GitHub release ${metadata.githubReleaseId}...`);
+        
         // Delete from GitHub Releases
         await octokit.repos.deleteRelease({
           owner: GITHUB_OWNER,
@@ -58,7 +69,7 @@ export async function cleanupSpecificFile(shareCode: string): Promise<boolean> {
           release_id: metadata.githubReleaseId,
         });
 
-        console.log(`Deleted GitHub release ${metadata.githubReleaseId} for file ${metadata.filename}`);
+        console.log(`✅ Deleted GitHub release ${metadata.githubReleaseId} for file ${metadata.filename}`);
       } catch (error: any) {
         // If release not found (404), that's okay - it's already deleted
         if (error.status !== 404) {

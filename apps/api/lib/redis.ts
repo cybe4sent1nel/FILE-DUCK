@@ -47,6 +47,8 @@ export interface StoredMetadata {
   requireCaptcha?: boolean; // If true, always require captcha for downloads
   downloadUrl?: string; // For GitHub storage
   githubReleaseId?: number; // For GitHub storage cleanup
+  isDeleted?: boolean; // For soft delete tracking
+  deletedAt?: number; // Timestamp when deleted
 }
 
 export async function storeMetadata(
