@@ -2,7 +2,7 @@ import NodeClam from 'clamscan';
 import path from 'path';
 import fs from 'fs/promises';
 
-const CLAMAV_HOST = process.env.CLAMAV_HOST || 'localhost';
+const CLAMAV_HOST = process.env.CLAMAV_HOST || '127.0.0.1';
 const CLAMAV_PORT = parseInt(process.env.CLAMAV_PORT || '3310', 10);
 
 let clamavScanner: NodeClam | null = null;

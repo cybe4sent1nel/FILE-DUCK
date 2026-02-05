@@ -119,7 +119,7 @@ export async function uploadToS3(
     return;
   }
 
-  const chunkSize = 100 * 1024 * 1024; // 100 MB chunks
+  const chunkSize = 500 * 1024 * 1024; // 500 MB chunks for better efficiency
   const chunks = Math.ceil(file.size / chunkSize);
   const parts: { ETag: string; PartNumber: number }[] = [];
 
