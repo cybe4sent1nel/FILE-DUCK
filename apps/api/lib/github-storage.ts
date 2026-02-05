@@ -1,10 +1,6 @@
 import { Octokit } from '@octokit/rest';
 import axios from 'axios';
-import * as zlib from 'zlib';
-import { promisify } from 'util';
-
-const gzip = promisify(zlib.gzip);
-const gunzip = promisify(zlib.gunzip);
+import * as pako from 'pako';
 
 const octokit = new Octokit({
   auth: process.env.GITHUB_TOKEN,
@@ -13,7 +9,7 @@ const octokit = new Octokit({
 const GITHUB_OWNER = process.env.GITHUB_STORAGE_OWNER || 'duckyoo9';
 const GITHUB_REPO = process.env.GITHUB_STORAGE_REPO || 'fileduck-storage';
 const CHUNK_SIZE = parseInt(process.env.GITHUB_CHUNK_SIZE || '1900000000'); // 1.9GB chunks (safe under 2GB)
-const ENABLE_COMPRESSION = process.env.GITHUB_ENABLE_COMPRESSION === 'true';
+const ENABLE_COMPRESSION = process.env.GITHUB_ENABLE_COMPRESSION !== 'false'; // Enabled by default
 
 // Rate limiting to avoid GitHub API abuse detection
 let uploadCount = 0;
@@ -59,24 +55,29 @@ export async function uploadToGitHub(
 
     const fileSize = fileBuffer.length;
     const needsChunking = fileSize > CHUNK_SIZE;
-    const shouldCompress = ENABLE_COMPRESSION && fileSize > 50 * 1024 * 1024; // Compress files > 50MB
+    const shouldCompress = ENABLE_COMPRESSION && fileSize > 10 * 1024 * 1024; // Compress files > 10MB
 
     let processedBuffer = fileBuffer;
     let isCompressed = false;
 
-    // Compress if beneficial
+    // Compress if beneficial using pako (deflate algorithm - works for all file types)
     if (shouldCompress) {
-      console.log(`Compressing file: ${filename} (${fileSize} bytes)`);
-      const compressed = await gzip(fileBuffer);
-      const compressionRatio = compressed.length / fileBuffer.length;
-      
-      // Only use compression if it saves at least 10%
-      if (compressionRatio < 0.9) {
-        processedBuffer = compressed;
-        isCompressed = true;
-        console.log(`✓ Compression saved ${((1 - compressionRatio) * 100).toFixed(1)}% (${fileBuffer.length} -> ${compressed.length} bytes)`);
-      } else {
-        console.log(`⚠️ Compression ineffective (${(compressionRatio * 100).toFixed(1)}%), using original`);
+      console.log(`🗜️ Compressing file: ${filename} (${fileSize} bytes)`);
+      try {
+        // Use pako with maximum compression level (9)
+        const compressed = Buffer.from(pako.deflate(fileBuffer, { level: 9 }));
+        const compressionRatio = compressed.length / fileBuffer.length;
+        
+        // Only use compression if it saves at least 5%
+        if (compressionRatio < 0.95) {
+          processedBuffer = compressed;
+          isCompressed = true;
+          console.log(`✓ Compression saved ${((1 - compressionRatio) * 100).toFixed(1)}% (${fileBuffer.length} → ${compressed.length} bytes)`);
+        } else {
+          console.log(`⚠️ Compression ineffective (${(compressionRatio * 100).toFixed(1)}%), using original`);
+        }
+      } catch (error) {
+        console.warn('⚠️ Compression failed, using original file:', error);
       }
     }
 
@@ -206,8 +207,16 @@ export async function downloadFromGitHub(
       });
       let buffer = Buffer.from(response.data);
       
+      // Decompress with pako if needed
       if (metadata.compressed) {
-        buffer = await gunzip(buffer);
+        console.log(`🗜️ Decompressing file (${buffer.length} bytes)`);
+        try {
+          buffer = Buffer.from(pako.inflate(buffer));
+          console.log(`✓ Decompressed to ${buffer.length} bytes`);
+        } catch (error) {
+          console.error('⚠️ Decompression failed:', error);
+          throw new Error('Failed to decompress file');
+        }
       }
       
       return buffer;
@@ -224,8 +233,16 @@ export async function downloadFromGitHub(
       
       let fullBuffer = Buffer.concat(chunks);
       
+      // Decompress with pako if needed
       if (metadata.compressed) {
-        fullBuffer = await gunzip(fullBuffer);
+        console.log(`🗜️ Decompressing chunked file (${fullBuffer.length} bytes)`);
+        try {
+          fullBuffer = Buffer.from(pako.inflate(fullBuffer));
+          console.log(`✓ Decompressed to ${fullBuffer.length} bytes`);
+        } catch (error) {
+          console.error('⚠️ Decompression failed:', error);
+          throw new Error('Failed to decompress file');
+        }
       }
       
       return fullBuffer;

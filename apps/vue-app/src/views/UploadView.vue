@@ -711,45 +711,69 @@ const uploadFile = async () => {
 
     // Simulate upload progress (GitHub storage happens server-side during scan)
     if (metaResponse.useGitHub || !metaResponse.uploadUrls || metaResponse.uploadUrls.length === 0) {
-      // GitHub storage - send file content to server
-      const reader = new FileReader();
-      reader.readAsDataURL(selectedFile.value);
-      await new Promise((resolve, reject) => {
-        reader.onload = async () => {
-          try {
-            const base64Data = (reader.result as string).split(',')[1];
-            
-            // Send file to server
-            const response = await fetch('/api/github-upload', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                shareCode: shareCode.value,
-                fileData: base64Data,
-                filename: selectedFile.value.name,
-                sha256: sha256Hash.value,
-              }),
-            });
-
-            if (!response.ok) {
-              const errorData = await response.json().catch(() => ({}));
-              const errorMsg = errorData.message || `Server error: ${response.status}`;
-              throw new Error(errorMsg);
-            }
-            
-            // Simulate progress for UX with smoother updates
-            for (let i = 1; i <= 100; i += 2) {
-              uploadProgress.value = i;
-              await new Promise(r => setTimeout(r, 30));
-            }
-            uploadProgress.value = 100;
-            resolve(null);
-          } catch (err) {
-            reject(err);
+      // GitHub storage - send file in chunks using FormData (avoid base64 bloat)
+      const CHUNK_SIZE = 8 * 1024 * 1024; // 8MB chunks (stays under Railway's 10MB limit)
+      const totalChunks = Math.ceil(selectedFile.value.size / CHUNK_SIZE);
+      
+      console.log(`📦 Uploading file in ${totalChunks} chunk(s)...`);
+      
+      for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+        const start = chunkIndex * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, selectedFile.value.size);
+        const chunk = selectedFile.value.slice(start, end);
+        
+        console.log(`📤 Uploading chunk ${chunkIndex + 1}/${totalChunks} (${chunk.size} bytes)`);
+        
+        // Use FormData for direct binary upload (no base64 encoding)
+        const formData = new FormData();
+        formData.append('file', chunk, selectedFile.value.name);
+        formData.append('shareCode', shareCode.value);
+        formData.append('filename', selectedFile.value.name);
+        formData.append('sha256', sha256Hash.value);
+        formData.append('chunkIndex', chunkIndex.toString());
+        formData.append('totalChunks', totalChunks.toString());
+        formData.append('isLastChunk', (chunkIndex === totalChunks - 1).toString());
+        
+        // Calculate progress before sending
+        const progressBefore = Math.floor((chunkIndex / totalChunks) * 100);
+        const progressAfter = Math.floor(((chunkIndex + 1) / totalChunks) * 100);
+        
+        // Animate progress while uploading
+        let currentProgress = progressBefore;
+        const progressInterval = setInterval(() => {
+          if (currentProgress < progressAfter - 1) {
+            currentProgress++;
+            uploadProgress.value = currentProgress;
           }
-        };
-        reader.onerror = reject;
-      });
+        }, 50);
+        
+        // Send chunk to server
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/github-upload`, {
+          method: 'POST',
+          body: formData, // Send as multipart/form-data
+        });
+        
+        clearInterval(progressInterval);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          const errorMsg = errorData.message || `Server error: ${response.status}`;
+          throw new Error(errorMsg);
+        }
+        
+        // Set progress to after value
+        uploadProgress.value = progressAfter;
+        console.log(`✅ Chunk ${chunkIndex + 1}/${totalChunks} uploaded successfully (${uploadProgress.value}%)`);
+        
+        // Small delay between chunks to avoid overwhelming the server
+        if (chunkIndex < totalChunks - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+      
+      // Ensure progress reaches 100%
+      uploadProgress.value = 100;
+      console.log('✅ All chunks uploaded successfully!');
     } else {
       // S3 storage - use presigned URLs
       await uploadToS3(
@@ -763,6 +787,9 @@ const uploadFile = async () => {
     }
 
     uploadProgress.value = 100;
+    
+    // Keep progress at 100% visible for a moment
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Save to local history
     addToUploadHistory({

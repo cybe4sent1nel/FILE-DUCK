@@ -420,7 +420,7 @@ const initiateDownload = async () => {
   if (!downloadUrl.value) return;
 
   try {
-    downloadProgress.value = 1;
+    downloadProgress.value = 0;
     success('📥 Download started! Please wait...');
     
     // Fetch with progress tracking
@@ -432,6 +432,8 @@ const initiateDownload = async () => {
 
     let receivedLength = 0;
     const chunks = [];
+    
+    console.log(`📥 Downloading file: ${fileInfo.value.filename} (${contentLength} bytes)`);
 
     if (reader) {
       while (true) {
@@ -440,9 +442,14 @@ const initiateDownload = async () => {
 
         chunks.push(value);
         receivedLength += value.length;
-        downloadProgress.value = Math.min(Math.round((receivedLength / contentLength) * 100), 99);
+        const progress = Math.min(Math.round((receivedLength / contentLength) * 100), 99);
+        downloadProgress.value = progress;
+        
+        console.log(`📊 Download progress: ${progress}% (${receivedLength}/${contentLength} bytes)`);
       }
     }
+    
+    console.log('✅ Download complete, creating file...');
 
     // Create blob and download
     const blob = new Blob(chunks);
@@ -458,6 +465,7 @@ const initiateDownload = async () => {
     downloadProgress.value = 100;
     downloadSuccess.value = true;
     success('✅ Download completed successfully!');
+    console.log(`✅ File saved: ${fileInfo.value.filename}`);
     
     // Update history uses count after successful download
     import('../services/uploadHistory').then(({ updateUploadHistory }) => {
@@ -466,10 +474,14 @@ const initiateDownload = async () => {
       });
     });
     
+    // Keep success animation visible for 5 seconds
     setTimeout(() => {
-      downloadProgress.value = 0;
       downloadSuccess.value = false;
-    }, 4000);
+      // Keep progress at 100% for a bit longer before resetting
+      setTimeout(() => {
+        downloadProgress.value = 0;
+      }, 2000);
+    }, 5000);
   } catch (err) {
     console.error('Download failed:', err);
     error('Download failed. Please try again.');

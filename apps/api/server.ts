@@ -21,8 +21,8 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json({ limit: '600mb' })); // Increase limit for large chunked uploads
-app.use(express.urlencoded({ extended: true, limit: '600mb' }));
+app.use(express.json({ limit: '75mb' })); // 50MB chunks + overhead
+app.use(express.urlencoded({ extended: true, limit: '75mb' }));
 
 // Lazy load Vercel handlers with dynamic imports for ESM
 const getHealthHandler = async () => (await import('./api/health.js')).default;
