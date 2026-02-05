@@ -45,27 +45,49 @@ const loadTurnstile = () => {
 };
 
 const renderTurnstile = async () => {
-  if (!turnstileRef.value || !window.turnstile) return;
+  if (!turnstileRef.value) {
+    console.error('Turnstile container not ready');
+    return;
+  }
+
+  if (!window.turnstile) {
+    console.error('Turnstile API not loaded');
+    emit('error', 'Turnstile API not loaded');
+    return;
+  }
+
+  if (!props.siteKey || props.siteKey === 'undefined') {
+    console.error('Invalid site key:', props.siteKey);
+    emit('error', 'Invalid captcha site key');
+    return;
+  }
 
   try {
-    widgetId = await window.turnstile.render(turnstileRef.value, {
+    // Give DOM a moment to settle
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    widgetId = window.turnstile.render(turnstileRef.value, {
       sitekey: props.siteKey,
       callback: (token: string) => {
+        console.log('Turnstile verified successfully');
         emit('verified', token);
       },
-      'error-callback': () => {
+      'error-callback': (error: any) => {
+        console.error('Turnstile verification error:', error);
         emit('error', 'Verification failed');
       },
       'expired-callback': () => {
+        console.warn('Turnstile token expired');
         emit('expired');
       },
       action: props.action,
       theme: 'light',
       size: 'normal',
     });
+    console.log('Turnstile widget rendered with ID:', widgetId);
   } catch (err) {
     console.error('Turnstile render error:', err);
-    emit('error', 'Failed to render captcha');
+    emit('error', `Failed to render captcha: ${err.message}`);
   }
 };
 
