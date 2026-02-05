@@ -6,6 +6,7 @@ import PrivacyView from '../views/PrivacyView.vue';
 import TermsView from '../views/TermsView.vue';
 import NotFoundView from '../views/NotFoundView.vue';
 import OfflineView from '../views/OfflineView.vue';
+import ErrorView from '../views/ErrorView.vue';
 
 const routes = [
   {
@@ -42,6 +43,15 @@ const routes = [
     path: '/offline',
     name: 'Offline',
     component: OfflineView,
+  },
+  {
+    path: '/error',
+    name: 'Error',
+    component: ErrorView,
+    props: route => ({ 
+      errorCode: route.params.errorCode || route.query.code,
+      errorDescription: route.params.errorDescription || route.query.message 
+    }),
   },
   {
     path: '/:pathMatch(.*)*',

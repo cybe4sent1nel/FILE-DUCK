@@ -6,6 +6,22 @@ import './style.css';
 import { registerSW } from 'virtual:pwa-register';
 
 const app = createApp(App);
+
+// Global error handler for unhandled errors
+app.config.errorHandler = (err, instance, info) => {
+  console.error('Global error:', err, info);
+  // Navigate to error page for critical errors
+  if (err instanceof Error && !err.message.includes('navigation')) {
+    router.push({
+      name: 'Error',
+      params: { 
+        errorCode: '500',
+        errorDescription: err.message 
+      }
+    });
+  }
+};
+
 app.use(createPinia());
 app.use(router);
 app.mount('#app');

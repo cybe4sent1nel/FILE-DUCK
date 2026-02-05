@@ -15,6 +15,33 @@ const api = axios.create({
   },
 });
 
+// Add response interceptor to handle errors globally
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Handle specific error codes
+    if (error.response) {
+      const status = error.response.status;
+      
+      // For 500+ errors, redirect to error page
+      if (status >= 500) {
+        // Don't navigate during initial page load or if already on error page
+        if (typeof window !== 'undefined' && !window.location.pathname.includes('/error')) {
+          const errorMessage = error.response.data?.message || error.message || 'Internal server error';
+          window.location.href = `/error?code=${status}&message=${encodeURIComponent(errorMessage)}`;
+        }
+      }
+    } else if (error.code === 'ERR_NETWORK') {
+      // Network errors should redirect to offline page
+      if (typeof window !== 'undefined' && !navigator.onLine && !window.location.pathname.includes('/offline')) {
+        window.location.href = '/offline';
+      }
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
 export interface ScanFileResponse {
   clean: boolean;
   decision: 'clean' | 'infected' | 'suspicious';
