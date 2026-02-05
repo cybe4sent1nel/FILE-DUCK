@@ -66,16 +66,29 @@ registerRoute(
 // Custom navigation handler - redirect to offline page when offline
 const navigationHandler = async (options: any) => {
   const { request } = options;
+  const url = new URL(request.url);
+  
+  // Don't cache these pages - always try network
+  const noCachePages = ['/history', '/offline'];
+  const isNoCachePage = noCachePages.some(page => url.pathname === page || url.pathname.startsWith(page + '/'));
   
   try {
     // Try to get from network first
     const response = await fetch(request);
     return response;
   } catch (error) {
-    // Network request failed - serve from cache or offline page
-    const url = new URL(request.url);
+    // Network request failed
     
-    // Try to get from cache first
+    // If trying to access a no-cache page while offline, show offline page
+    if (isNoCachePage) {
+      const cache = await caches.open('workbox-precache-v2-' + self.location.origin);
+      const offlineResponse = await cache.match('/offline');
+      if (offlineResponse) {
+        return offlineResponse;
+      }
+    }
+    
+    // Try to get from cache first for other pages
     const cache = await caches.open('workbox-precache-v2-' + self.location.origin);
     let cachedResponse = await cache.match(request);
     

@@ -22,14 +22,25 @@ api.interceptors.response.use(
     // Handle specific error codes
     if (error.response) {
       const status = error.response.status;
+      const errorMessage = error.response.data?.message || error.message || 'An error occurred';
       
-      // For 500+ errors, redirect to error page
+      // For 500+ errors (except when navigating to error page), redirect to error page
       if (status >= 500) {
-        // Don't navigate during initial page load or if already on error page
         if (typeof window !== 'undefined' && !window.location.pathname.includes('/error')) {
-          const errorMessage = error.response.data?.message || error.message || 'Internal server error';
           window.location.href = `/error?code=${status}&message=${encodeURIComponent(errorMessage)}`;
         }
+      }
+      // For 402 (payment required), show specific message
+      else if (status === 402) {
+        console.error('Payment required:', errorMessage);
+      }
+      // For 413 (payload too large), show specific message
+      else if (status === 413) {
+        console.error('File too large:', errorMessage);
+      }
+      // For 429 (too many requests), show rate limit message
+      else if (status === 429) {
+        console.error('Rate limit exceeded:', errorMessage);
       }
     } else if (error.code === 'ERR_NETWORK') {
       // Network errors should redirect to offline page

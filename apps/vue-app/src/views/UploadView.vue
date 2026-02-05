@@ -56,7 +56,7 @@
     </div>
 
     <!-- Main Upload Card -->
-    <div class="bg-white rounded-3xl shadow-xl p-10 border border-purple-100 max-w-3xl mx-auto mb-20">
+    <div id="upload" class="bg-white rounded-3xl shadow-xl p-10 border border-purple-100 max-w-3xl mx-auto mb-20 scroll-mt-20">
 
       <div v-if="!shareCode" class="space-y-6">
         <!-- File Selection with Animation -->
@@ -97,15 +97,24 @@
                 Maximum file size: 5GB
               </p>
             </div>
-            <div v-else class="flex items-center justify-center space-x-4 bg-purple-50 rounded-xl p-6 border border-purple-200">
-              <FileIcon class="w-12 h-12 text-purple-400" />
-              <div class="text-left">
-                <p class="text-xl font-bold text-gray-800">{{ selectedFile.name }}</p>
-                <p class="text-base text-gray-600 flex items-center mt-1">
-                  <HardDriveIcon class="w-4 h-4 mr-1" />
-                  {{ formatSize(selectedFile.size) }}
-                </p>
+            <div v-else class="relative flex items-center justify-between bg-purple-50 rounded-xl p-6 border border-purple-200">
+              <div class="flex items-center space-x-4">
+                <FileIcon class="w-12 h-12 text-purple-400" />
+                <div class="text-left">
+                  <p class="text-xl font-bold text-gray-800">{{ selectedFile.name }}</p>
+                  <p class="text-base text-gray-600 flex items-center mt-1">
+                    <HardDriveIcon class="w-4 h-4 mr-1" />
+                    {{ formatSize(selectedFile.size) }}
+                  </p>
+                </div>
               </div>
+              <button 
+                @click.stop="removeFile" 
+                class="absolute top-4 right-4 p-2 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all hover:scale-110"
+                title="Remove file"
+              >
+                <XIcon class="w-5 h-5" />
+              </button>
             </div>
           </label>
         </div>
@@ -193,6 +202,25 @@
           </div>
         </div>
 
+        <!-- SHA256 Hash for Verification -->
+        <div v-if="selectedFile && sha256Hash" class="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-5">
+          <p class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+            <ShieldCheckIcon class="w-4 h-4 mr-2 text-blue-600" />
+            File Verification Hash (SHA-256)
+          </p>
+          <p class="text-xs text-gray-600 mb-3">
+            This unique code verifies your file hasn't been tampered with during transfer
+          </p>
+          <div class="flex items-center justify-between bg-white rounded-lg p-3 border border-blue-100">
+            <p class="font-mono text-xs text-blue-600 break-all flex-1">
+              {{ sha256Hash }}
+            </p>
+            <button @click="copyHash" class="ml-3 text-blue-500 hover:text-blue-600 hover:scale-110 transition-transform flex-shrink-0">
+              <CopyIcon class="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
         <!-- Upload Options -->
         <div v-if="selectedFile" class="space-y-5 bg-white rounded-xl p-6 border border-purple-100">
           <div>
@@ -224,13 +252,38 @@
           </div>
 
           <div class="flex items-center space-x-3 bg-purple-50 rounded-lg p-4 border border-purple-100">
-            <input
-              type="checkbox"
-              v-model="enableEncryption"
-              id="encryption"
-              class="w-5 h-5 text-purple-400 rounded"
-            />
-            <label for="encryption" class="flex items-center text-base font-medium text-gray-700">
+            <label class="neon-checkbox">
+              <input type="checkbox" v-model="enableEncryption" id="encryption" />
+              <div class="neon-checkbox__frame">
+                <div class="neon-checkbox__box">
+                  <div class="neon-checkbox__check-container">
+                    <svg viewBox="0 0 24 24" class="neon-checkbox__check">
+                      <path d="M3,12.5l7,7L21,5"></path>
+                    </svg>
+                  </div>
+                  <div class="neon-checkbox__glow"></div>
+                  <div class="neon-checkbox__borders">
+                    <span></span><span></span><span></span><span></span>
+                  </div>
+                </div>
+                <div class="neon-checkbox__effects">
+                  <div class="neon-checkbox__particles">
+                    <span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span>
+                  </div>
+                  <div class="neon-checkbox__rings">
+                    <div class="ring"></div>
+                    <div class="ring"></div>
+                    <div class="ring"></div>
+                  </div>
+                  <div class="neon-checkbox__sparks">
+                    <span></span><span></span><span></span><span></span>
+                  </div>
+                </div>
+              </div>
+            </label>
+            <label for="encryption" class="flex items-center text-base font-medium text-gray-700 cursor-pointer">
               <LockIcon class="w-5 h-5 mr-2 text-purple-400" />
               Enable client-side encryption (zero-knowledge)
             </label>
@@ -320,6 +373,25 @@
             <DownloadIcon class="w-5 h-5 mr-3 text-gray-600" />
             <strong class="text-gray-800">Downloads left:</strong>&nbsp;<span class="text-gray-600">{{ maxUses === 999 ? 'Unlimited' : maxUses }}</span>
           </p>
+        </div>
+
+        <!-- SHA256 Hash Verification -->
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-5">
+          <p class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+            <ShieldCheckIcon class="w-4 h-4 mr-2 text-blue-600" />
+            File Verification Hash (SHA-256)
+          </p>
+          <p class="text-xs text-gray-600 mb-3">
+            Share this hash with recipients to verify file integrity. They can compare it after download to ensure the file hasn't been modified.
+          </p>
+          <div class="flex items-center justify-between bg-white rounded-lg p-3 border border-blue-100">
+            <p class="font-mono text-xs text-blue-600 break-all flex-1">
+              {{ sha256Hash }}
+            </p>
+            <button @click="copyHash" class="ml-3 text-blue-500 hover:text-blue-600 hover:scale-110 transition-transform flex-shrink-0">
+              <CopyIcon class="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <!-- Scanning Status -->
@@ -446,7 +518,7 @@ import CTASection from '../components/CTASection.vue';
 import { 
   FileIcon, ShieldCheckIcon, CopyIcon, ClockIcon, DownloadIcon, 
   LockIcon, UploadIcon, RocketIcon, LoaderIcon, KeyIcon, 
-  HardDriveIcon, RefreshCwIcon, GlobeIcon, EyeOffIcon, AlertTriangleIcon, ZapIcon 
+  HardDriveIcon, RefreshCwIcon, GlobeIcon, EyeOffIcon, AlertTriangleIcon, ZapIcon, XIcon 
 } from 'lucide-vue-next';
 import { computeSHA256, formatFileSize, formatTimeRemaining } from '@fileduck/shared';
 import { uploadFileMeta, uploadToS3, scanFileBeforeUpload } from '../services/api';
@@ -466,6 +538,7 @@ import StressedWomanAnimation from '../../../../animations/Stressed Woman at wor
 const fileInput = ref<HTMLInputElement | null>(null);
 const selectedFile = ref<File | null>(null);
 const sha256Hash = ref('');
+const verificationCode = ref('');
 const isDragging = ref(false);
 const isUploading = ref(false);
 const uploadProgress = ref(0);
@@ -595,7 +668,9 @@ const uploadFile = async () => {
             });
 
             if (!response.ok) {
-              throw new Error('Failed to upload file to GitHub');
+              const errorData = await response.json().catch(() => ({}));
+              const errorMsg = errorData.message || `Server error: ${response.status}`;
+              throw new Error(errorMsg);
             }
             
             // Simulate progress for UX
@@ -641,7 +716,29 @@ const uploadFile = async () => {
     startScanSimulation();
   } catch (err: any) {
     console.error('Upload failed:', err);
-    error('Upload failed: ' + (err.message || 'Unknown error'));
+    
+    // Handle specific error codes
+    let errorMessage = 'Upload failed';
+    if (err.response) {
+      const status = err.response.status;
+      if (status === 402) {
+        errorMessage = 'Payment required: Storage quota exceeded. Please upgrade your plan.';
+      } else if (status === 502) {
+        errorMessage = 'Server temporarily unavailable. Please try again in a moment.';
+      } else if (status === 413) {
+        errorMessage = 'File too large. Maximum size is 5GB.';
+      } else if (status === 429) {
+        errorMessage = 'Too many uploads. Please wait a moment and try again.';
+      } else if (status >= 500) {
+        errorMessage = `Server error (${status}). Please try again later.`;
+      } else {
+        errorMessage = err.response.data?.message || err.message || 'Unknown error occurred';
+      }
+    } else if (err.message) {
+      errorMessage = err.message;
+    }
+    
+    error(errorMessage);
     resetForm();
   } finally {
     isUploading.value = false;
@@ -678,6 +775,22 @@ const startScanSimulation = () => {
   }, 3000);
 };
 
+const removeFile = () => {
+  selectedFile.value = null;
+  sha256Hash.value = '';
+  scanStatus.value = null;
+  virusDetails.value = '';
+  isScanning.value = false;
+  if (fileInput.value) {
+    fileInput.value.value = '';
+  }
+};
+
+const copyHash = () => {
+  navigator.clipboard.writeText(sha256Hash.value);
+  success('✓ SHA-256 hash copied to clipboard!');
+};
+
 const copyShareCode = () => {
   navigator.clipboard.writeText(shareCode.value);
   success('✓ Share code copied to clipboard!');
@@ -686,3 +799,371 @@ const copyShareCode = () => {
 const formatSize = formatFileSize;
 const formatExpiry = formatTimeRemaining;
 </script>
+
+<style scoped>
+/* Neon Checkbox Styles */
+.neon-checkbox {
+  --primary: #00ffaa;
+  --primary-dark: #00cc88;
+  --primary-light: #88ffdd;
+  --size: 30px;
+  position: relative;
+  width: var(--size);
+  height: var(--size);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.neon-checkbox input {
+  display: none;
+}
+
+.neon-checkbox__frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.neon-checkbox__box {
+  position: absolute;
+  inset: 0;
+  background: rgba(237, 228, 228, 0.8);
+  border-radius: 4px;
+  border: 2px solid var(--primary-dark);
+  transition: all 0.4s ease;
+}
+
+.neon-checkbox__check-container {
+  position: absolute;
+  inset: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.neon-checkbox__check {
+  width: 80%;
+  height: 80%;
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  transform-origin: center;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.neon-checkbox__glow {
+  position: absolute;
+  inset: -2px;
+  border-radius: 6px;
+  background: var(--primary);
+  opacity: 0;
+  filter: blur(8px);
+  transform: scale(1.2);
+  transition: all 0.4s ease;
+}
+
+.neon-checkbox__borders {
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.neon-checkbox__borders span {
+  position: absolute;
+  width: 40px;
+  height: 1px;
+  background: var(--primary);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.neon-checkbox__borders span:nth-child(1) {
+  top: 0;
+  left: -100%;
+  animation: borderFlow1 2s linear infinite;
+}
+
+.neon-checkbox__borders span:nth-child(2) {
+  top: -100%;
+  right: 0;
+  width: 1px;
+  height: 40px;
+  animation: borderFlow2 2s linear infinite;
+}
+
+.neon-checkbox__borders span:nth-child(3) {
+  bottom: 0;
+  right: -100%;
+  animation: borderFlow3 2s linear infinite;
+}
+
+.neon-checkbox__borders span:nth-child(4) {
+  bottom: -100%;
+  left: 0;
+  width: 1px;
+  height: 40px;
+  animation: borderFlow4 2s linear infinite;
+}
+
+.neon-checkbox__particles span {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: var(--primary);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  top: 50%;
+  left: 50%;
+  box-shadow: 0 0 6px var(--primary);
+}
+
+.neon-checkbox__rings {
+  position: absolute;
+  inset: -20px;
+  pointer-events: none;
+}
+
+.neon-checkbox__rings .ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--primary);
+  opacity: 0;
+  transform: scale(0);
+}
+
+.neon-checkbox__sparks span {
+  position: absolute;
+  width: 20px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--primary), transparent);
+  opacity: 0;
+}
+
+/* Hover Effects */
+.neon-checkbox:hover .neon-checkbox__box {
+  border-color: var(--primary);
+  transform: scale(1.05);
+}
+
+/* Checked State */
+.neon-checkbox input:checked ~ .neon-checkbox__frame .neon-checkbox__box {
+  border-color: var(--primary);
+  background: rgba(0, 255, 170, 0.1);
+}
+
+.neon-checkbox input:checked ~ .neon-checkbox__frame .neon-checkbox__check {
+  stroke-dashoffset: 0;
+  transform: scale(1.1);
+}
+
+.neon-checkbox input:checked ~ .neon-checkbox__frame .neon-checkbox__glow {
+  opacity: 0.2;
+}
+
+.neon-checkbox
+  input:checked
+  ~ .neon-checkbox__frame
+  .neon-checkbox__borders
+  span {
+  opacity: 1;
+}
+
+/* Particle Animations */
+.neon-checkbox
+  input:checked
+  ~ .neon-checkbox__frame
+  .neon-checkbox__particles
+  span {
+  animation: particleExplosion 0.6s ease-out forwards;
+}
+
+.neon-checkbox
+  input:checked
+  ~ .neon-checkbox__frame
+  .neon-checkbox__rings
+  .ring {
+  animation: ringPulse 0.6s ease-out forwards;
+}
+
+.neon-checkbox
+  input:checked
+  ~ .neon-checkbox__frame
+  .neon-checkbox__sparks
+  span {
+  animation: sparkFlash 0.6s ease-out forwards;
+}
+
+/* Animations */
+@keyframes borderFlow1 {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+@keyframes borderFlow2 {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(200%);
+  }
+}
+
+@keyframes borderFlow3 {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-200%);
+  }
+}
+
+@keyframes borderFlow4 {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-200%);
+  }
+}
+
+@keyframes particleExplosion {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(
+        calc(-50% + var(--x, 20px)),
+        calc(-50% + var(--y, 20px))
+      )
+      scale(0);
+    opacity: 0;
+  }
+}
+
+@keyframes ringPulse {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes sparkFlash {
+  0% {
+    transform: rotate(var(--r, 0deg)) translateX(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(var(--r, 0deg)) translateX(30px) scale(0);
+    opacity: 0;
+  }
+}
+
+/* Particle Positions */
+.neon-checkbox__particles span:nth-child(1) {
+  --x: 25px;
+  --y: -25px;
+}
+.neon-checkbox__particles span:nth-child(2) {
+  --x: -25px;
+  --y: -25px;
+}
+.neon-checkbox__particles span:nth-child(3) {
+  --x: 25px;
+  --y: 25px;
+}
+.neon-checkbox__particles span:nth-child(4) {
+  --x: -25px;
+  --y: 25px;
+}
+.neon-checkbox__particles span:nth-child(5) {
+  --x: 35px;
+  --y: 0px;
+}
+.neon-checkbox__particles span:nth-child(6) {
+  --x: -35px;
+  --y: 0px;
+}
+.neon-checkbox__particles span:nth-child(7) {
+  --x: 0px;
+  --y: 35px;
+}
+.neon-checkbox__particles span:nth-child(8) {
+  --x: 0px;
+  --y: -35px;
+}
+.neon-checkbox__particles span:nth-child(9) {
+  --x: 20px;
+  --y: -30px;
+}
+.neon-checkbox__particles span:nth-child(10) {
+  --x: -20px;
+  --y: 30px;
+}
+.neon-checkbox__particles span:nth-child(11) {
+  --x: 30px;
+  --y: 20px;
+}
+.neon-checkbox__particles span:nth-child(12) {
+  --x: -30px;
+  --y: -20px;
+}
+
+/* Spark Rotations */
+.neon-checkbox__sparks span:nth-child(1) {
+  --r: 0deg;
+  top: 50%;
+  left: 50%;
+}
+.neon-checkbox__sparks span:nth-child(2) {
+  --r: 90deg;
+  top: 50%;
+  left: 50%;
+}
+.neon-checkbox__sparks span:nth-child(3) {
+  --r: 180deg;
+  top: 50%;
+  left: 50%;
+}
+.neon-checkbox__sparks span:nth-child(4) {
+  --r: 270deg;
+  top: 50%;
+  left: 50%;
+}
+
+/* Ring Delays */
+.neon-checkbox__rings .ring:nth-child(1) {
+  animation-delay: 0s;
+}
+.neon-checkbox__rings .ring:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.neon-checkbox__rings .ring:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+/* Progress Bar Animation */
+.progress-fill {
+  background: linear-gradient(90deg, #a855f7, #ec4899, #f97316);
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+</style>

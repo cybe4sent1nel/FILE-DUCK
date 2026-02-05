@@ -28,14 +28,14 @@
               <HomeIcon class="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
               Home
             </router-link>
-            <router-link to="/" class="flex items-center text-gray-700 hover:text-purple-600 transition-all font-semibold px-4 py-2 rounded-lg hover:bg-purple-50 group">
+            <a href="/#upload" @click.prevent="scrollToUpload" class="flex items-center text-gray-700 hover:text-purple-600 transition-all font-semibold px-4 py-2 rounded-lg hover:bg-purple-50 group cursor-pointer">
               <UploadIcon class="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
               Upload
-            </router-link>
-            <router-link to="/download" class="flex items-center text-gray-700 hover:text-yellow-600 transition-all font-semibold px-4 py-2 rounded-lg hover:bg-yellow-50 group">
+            </a>
+            <a href="/#download" @click.prevent="scrollToDownload" class="flex items-center text-gray-700 hover:text-yellow-600 transition-all font-semibold px-4 py-2 rounded-lg hover:bg-yellow-50 group cursor-pointer">
               <DownloadIcon class="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
               Download
-            </router-link>
+            </a>
             <router-link to="/history" class="flex items-center text-gray-700 hover:text-purple-600 transition-all font-semibold px-4 py-2 rounded-lg hover:bg-purple-50 group">
               <ClockIcon class="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
               My Uploads
@@ -192,6 +192,25 @@ onMounted(() => {
     adsLoaded.value = false;
   }
 });
+
+// Scroll to sections
+const scrollToUpload = () => {
+  if (router.currentRoute.value.path !== '/') {
+    router.push('/').then(() => {
+      setTimeout(() => {
+        const uploadSection = document.querySelector('#upload') || document.querySelector('.upload-section');
+        uploadSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    });
+  } else {
+    const uploadSection = document.querySelector('#upload') || document.querySelector('.upload-section');
+    uploadSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+};
+
+const scrollToDownload = () => {
+  router.push('/download');
+};
 </script>
 
 <style scoped>
