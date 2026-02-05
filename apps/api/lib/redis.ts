@@ -44,6 +44,7 @@ export interface StoredMetadata {
   scanStatus: 'pending' | 'scanning' | 'clean' | 'infected' | 'error' | 'skipped';
   encrypted: boolean;
   scanSkipped?: boolean;
+  requireCaptcha?: boolean; // If true, always require captcha for downloads
   downloadUrl?: string; // For GitHub storage
   githubReleaseId?: number; // For GitHub storage cleanup
 }

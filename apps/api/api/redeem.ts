@@ -50,17 +50,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Check if CAPTCHA is required (skip in development)
+    // Get metadata first to check requireCaptcha setting
+    const metadata = await getMetadata(shareCode);
+
+    if (!metadata) {
+      await trackFailedAttempt(ip);
+      return res.status(404).json({
+        error: 'Share code not found or expired',
+        code: 'INVALID_CODE',
+      });
+    }
+
+    // Smart Hybrid CAPTCHA Logic (skip in development)
     if (IS_PRODUCTION) {
       const failedAttempts = await trackFailedAttempt(ip);
-      if (failedAttempts >= CAPTCHA_THRESHOLD && !captchaToken) {
+      
+      // Risk-based triggers for CAPTCHA requirement
+      const captchaRequired = 
+        metadata.requireCaptcha || // Uploader opted-in for captcha protection
+        failedAttempts >= CAPTCHA_THRESHOLD || // Multiple failed attempts (brute force)
+        metadata.size > 50 * 1024 * 1024; // Large files (>50MB)
+      
+      if (captchaRequired && !captchaToken) {
         return res.status(403).json({
           error: 'CAPTCHA verification required',
           code: 'CAPTCHA_REQUIRED',
+          reason: metadata.requireCaptcha ? 'uploader_required' : 
+                  failedAttempts >= CAPTCHA_THRESHOLD ? 'failed_attempts' : 
+                  'large_file',
         });
       }
 
-      // Verify CAPTCHA token with Google reCAPTCHA
+      // Verify CAPTCHA token (Turnstile or reCAPTCHA)
       if (captchaToken) {
         const isValid = await verifyCaptcha(captchaToken);
         if (!isValid) {
@@ -72,17 +93,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     } else {
       console.log('⚠️ Development mode - CAPTCHA verification skipped');
-    }
-
-    // Get metadata from Redis
-    const metadata = await getMetadata(shareCode);
-
-    if (!metadata) {
-      await trackFailedAttempt(ip);
-      return res.status(404).json({
-        error: 'Share code not found or expired',
-        code: 'INVALID_CODE',
-      });
     }
 
     // Check expiration

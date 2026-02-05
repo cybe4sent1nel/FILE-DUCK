@@ -42,7 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Continue without rate limiting in development
     }
 
-    const { filename, size, sha256, mimeType, ttlHours, maxUses, encrypted, scanSkipped } = req.body;
+    const { filename, size, sha256, mimeType, ttlHours, maxUses, encrypted, scanSkipped, requireCaptcha } = req.body;
 
     // Validation
     if (!filename || !size || !sha256 || !mimeType) {
@@ -102,6 +102,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           scanStatus: scanSkipped ? 'skipped' : 'pending',
           encrypted: encrypted || false,
           scanSkipped: scanSkipped || false,
+          requireCaptcha: requireCaptcha || false,
         },
         ttl
       );

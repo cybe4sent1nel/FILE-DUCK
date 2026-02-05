@@ -14,6 +14,7 @@ export interface FileMetadata {
   scanResults?: ScanResults;
   encrypted: boolean;
   scanSkipped?: boolean;
+  requireCaptcha?: boolean; // If true, always require captcha for downloads
 }
 
 export enum ScanStatus {
@@ -48,6 +49,7 @@ export interface UploadMetaRequest {
   maxUses?: number; // Default 1 (one-time)
   encrypted?: boolean;
   scanSkipped?: boolean;
+  requireCaptcha?: boolean; // Optional: force captcha for all downloads
 }
 
 export interface UploadMetaResponse {
