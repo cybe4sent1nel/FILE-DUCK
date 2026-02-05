@@ -362,6 +362,10 @@ const redeemCode = async () => {
       captchaToken: captchaToken.value || undefined,
     });
 
+    // Clear captcha token after successful use to prevent reuse
+    captchaToken.value = '';
+    captchaRequired.value = false;
+
     downloadUrl.value = response.downloadUrl;
     fileInfo.value = {
       filename: response.filename,
@@ -379,6 +383,12 @@ const redeemCode = async () => {
     if (err.response?.data?.code === 'CAPTCHA_REQUIRED') {
       captchaRequired.value = true;
       errorMessage.value = 'CAPTCHA verification required';
+    } else if (err.response?.data?.code === 'CAPTCHA_INVALID') {
+      errorMessage.value = 'CAPTCHA verification failed or expired. Please complete it again.';
+      captchaToken.value = '';
+      // Force widget reload
+      captchaRequired.value = false;
+      setTimeout(() => { captchaRequired.value = true; }, 100);
     } else if (err.response?.data?.code === 'SCAN_PENDING') {
       errorMessage.value = 'File is being scanned for malware. Please try again in a moment.';
     } else if (err.response?.data?.code === 'MALWARE_DETECTED') {
@@ -392,6 +402,7 @@ const redeemCode = async () => {
 };
 
 const handleCaptchaVerified = (token: string) => {
+  console.log('✅ Captcha verified, token length:', token?.length);
   captchaToken.value = token;
   errorMessage.value = '';
   // Auto-submit after captcha verification
