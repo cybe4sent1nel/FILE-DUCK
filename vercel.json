@@ -15,8 +15,28 @@
   ],
   "routes": [
     {
+      "src": "/api/upload-meta",
+      "dest": "/apps/api/api/upload-meta.ts",
+      "methods": ["POST", "OPTIONS"]
+    },
+    {
+      "src": "/api/complete-upload",
+      "dest": "/apps/api/api/complete-upload.ts",
+      "methods": ["POST", "OPTIONS"]
+    },
+    {
+      "src": "/api/redeem",
+      "dest": "/apps/api/api/redeem.ts",
+      "methods": ["POST", "OPTIONS"]
+    },
+    {
+      "src": "/api/health",
+      "dest": "/apps/api/api/health.ts",
+      "methods": ["GET", "OPTIONS"]
+    },
+    {
       "src": "/api/(.*)",
-      "dest": "/apps/api/api/$1"
+      "dest": "/apps/api/api/$1.ts"
     },
     {
       "handle": "filesystem"

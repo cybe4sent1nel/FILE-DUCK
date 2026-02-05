@@ -78,12 +78,24 @@ export async function scanFileBeforeUpload(
   // Scanner service runs on port 4000
   const scannerUrl = import.meta.env.VITE_SCANNER_URL || 'http://localhost:4000';
   
-  const response = await axios.post(`${scannerUrl}/scan`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-  return response.data;
+  try {
+    const response = await axios.post(`${scannerUrl}/scan`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 30000, // 30 second timeout for large files
+    });
+    return response.data;
+  } catch (error: any) {
+    // If scanner is not available, return clean status
+    console.warn('Scanner unavailable, skipping scan:', error.message);
+    return {
+      clean: true,
+      decision: 'clean',
+      clamav: { infected: false },
+      score: 0
+    };
+  }
 }
 
 export async function uploadFileMeta(

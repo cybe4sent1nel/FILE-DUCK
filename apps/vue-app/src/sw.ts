@@ -73,28 +73,46 @@ const navigationHandler = async (options: any) => {
   const isNoCachePage = noCachePages.some(page => url.pathname === page || url.pathname.startsWith(page + '/'));
   
   try {
-    // Try to get from network first
-    const response = await fetch(request);
+    // Try to get from network first with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+    
+    const response = await fetch(request, { 
+      signal: controller.signal,
+      cache: 'no-cache'
+    });
+    clearTimeout(timeoutId);
     return response;
   } catch (error) {
-    // Network request failed
+    // Network request failed or timed out
+    console.log('[SW] Network failed for:', url.pathname);
     
-    // If trying to access a no-cache page while offline, show offline page
-    if (isNoCachePage) {
-      const cache = await caches.open('workbox-precache-v2-' + self.location.origin);
-      const offlineResponse = await cache.match('/offline');
-      if (offlineResponse) {
-        return offlineResponse;
+    // Always show offline page for no-cache pages when network fails
+    if (isNoCachePage || url.pathname === '/') {
+      const cacheNames = await caches.keys();
+      for (const cacheName of cacheNames) {
+        const cache = await caches.open(cacheName);
+        const offlineResponse = await cache.match('/offline');
+        if (offlineResponse) {
+          console.log('[SW] Serving offline page');
+          return offlineResponse;
+        }
       }
     }
     
-    // Try to get from cache first for other pages
-    const cache = await caches.open('workbox-precache-v2-' + self.location.origin);
-    let cachedResponse = await cache.match(request);
+    // Try to get from cache for other pages
+    const cacheNames = await caches.keys();
+    for (const cacheName of cacheNames) {
+      const cache = await caches.open(cacheName);
+      const cachedResponse = await cache.match(request);
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+    }
     
-    // If not in cache and offline, serve the offline page
-    if (!cachedResponse) {
-      // Try to get the offline page from cache
+    // Last resort: try offline page
+    for (const cacheName of cacheNames) {
+      const cache = await caches.open(cacheName);
       const offlineResponse = await cache.match('/offline');
       if (offlineResponse) {
         return offlineResponse;
@@ -107,7 +125,8 @@ const navigationHandler = async (options: any) => {
       }
     }
     
-    return cachedResponse || new Response('Offline - please check your connection', {
+    // Final fallback
+    return new Response('Offline - please check your connection', {
       status: 503,
       statusText: 'Service Unavailable',
       headers: new Headers({
