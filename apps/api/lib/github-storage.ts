@@ -118,8 +118,19 @@ async function uploadSingleFile(
     repo: GITHUB_REPO,
     release_id: release.data.id,
     name: actualFilename,
-    data: fileBuffer as any,
+    data: fileBuffer as unknown as string,
+    headers: {
+      'content-type': 'application/octet-stream',
+      'content-length': fileBuffer.length,
+    },
   });
+  
+  // Verify the asset was uploaded
+  if (!uploadResponse.data.browser_download_url) {
+    throw new Error('GitHub asset upload failed - no download URL returned');
+  }
+  
+  console.log(`✓ Asset uploaded: ${uploadResponse.data.browser_download_url}`);
 
   return {
     downloadUrl: uploadResponse.data.browser_download_url,
