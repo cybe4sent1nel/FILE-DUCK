@@ -41,8 +41,9 @@ export interface StoredMetadata {
   usesLeft: number;
   maxUses: number;
   s3Key: string;
-  scanStatus: 'pending' | 'scanning' | 'clean' | 'infected' | 'error';
+  scanStatus: 'pending' | 'scanning' | 'clean' | 'infected' | 'error' | 'skipped';
   encrypted: boolean;
+  scanSkipped?: boolean;
   downloadUrl?: string; // For GitHub storage
   githubReleaseId?: number; // For GitHub storage cleanup
 }

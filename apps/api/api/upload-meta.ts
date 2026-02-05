@@ -42,7 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Continue without rate limiting in development
     }
 
-    const { filename, size, sha256, mimeType, ttlHours, maxUses, encrypted } = req.body;
+    const { filename, size, sha256, mimeType, ttlHours, maxUses, encrypted, scanSkipped } = req.body;
 
     // Validation
     if (!filename || !size || !sha256 || !mimeType) {
@@ -99,8 +99,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           usesLeft: maxUses || CONSTANTS.DEFAULT_MAX_USES,
           maxUses: maxUses || CONSTANTS.DEFAULT_MAX_USES,
           s3Key,
-          scanStatus: 'pending',
+          scanStatus: scanSkipped ? 'skipped' : 'pending',
           encrypted: encrypted || false,
+          scanSkipped: scanSkipped || false,
         },
         ttl
       );

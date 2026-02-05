@@ -90,6 +90,31 @@
 
       <!-- File Info & Download -->
       <div v-else class="space-y-6">
+        <!-- Scan Skipped Warning (for large unscanned files) -->
+        <div v-if="fileInfo.scanSkipped && !fileInfo.isQuarantined" class="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-6 shadow-lg">
+          <div class="flex items-start">
+            <AlertTriangleIcon class="w-16 h-16 text-yellow-600 mr-4 flex-shrink-0" />
+            <div class="flex-1">
+              <p class="text-lg font-bold text-yellow-900 mb-3 flex items-center">
+                <AlertTriangleIcon class="w-6 h-6 mr-2" />
+                ⚠️ SECURITY NOTICE: FILE NOT SCANNED
+              </p>
+              <p class="text-base text-yellow-800 mb-3 bg-white/50 p-3 rounded">
+                This file was <strong>not scanned for viruses</strong> before upload because it exceeds the 32MB scanning limit.
+              </p>
+              <ul class="text-sm text-yellow-700 space-y-2 mb-4 bg-white/30 p-3 rounded">
+                <li class="flex items-start"><span class="mr-2">•</span>The sender chose to skip virus scanning for this large file</li>
+                <li class="flex items-start"><span class="mr-2">•</span>Download at your own risk and verify file integrity</li>
+                <li class="flex items-start"><span class="mr-2">•</span><strong>Strongly recommended:</strong> Scan with your own antivirus before opening</li>
+                <li class="flex items-start"><span class="mr-2">•</span>Verify the SHA-256 checksum below to ensure file integrity</li>
+              </ul>
+              <p class="text-sm font-bold text-yellow-900">
+                💡 FileDuck is not responsible for any damage caused by downloading unscanned files. Proceed with caution.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <!-- Quarantine Warning (if applicable) -->
         <div v-if="fileInfo.isQuarantined" class="bg-red-50 border-2 border-red-400 rounded-lg p-4">
           <div class="flex items-start">
@@ -288,6 +313,7 @@ const fileInfo = ref({
   usesLeft: 0,
   expiresAt: 0,
   isQuarantined: false,
+  scanSkipped: false,
 });
 
 onMounted(() => {
@@ -319,6 +345,7 @@ const redeemCode = async () => {
       usesLeft: response.usesLeft,
       expiresAt: response.expiresAt,
       isQuarantined: response.isQuarantined || false,
+      scanSkipped: response.scanSkipped || false,
     };
   } catch (err: any) {
     console.error('Redeem failed:', err);

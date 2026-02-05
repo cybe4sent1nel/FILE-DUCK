@@ -202,6 +202,30 @@
           </div>
         </div>
 
+        <!-- Scan Skipped Warning (For large files >32MB) -->
+        <div v-else-if="scanStatus === 'skipped'" class="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-6">
+          <div class="flex items-center space-x-4">
+            <div class="flex-shrink-0">
+              <AlertTriangleIcon class="w-16 h-16 text-yellow-600" />
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center space-x-2 mb-2">
+                <AlertTriangleIcon class="w-7 h-7 text-yellow-600" />
+                <p class="text-xl font-bold text-yellow-800">⚠️ File Too Large for Scanning</p>
+              </div>
+              <p class="text-yellow-700 font-medium mb-2">
+                This file is larger than 32MB and cannot be scanned with our free VirusTotal tier.
+              </p>
+              <p class="text-sm text-yellow-600 mb-3">
+                The file will be uploaded <strong>without virus scanning</strong>. Recipients will be warned that this file was not scanned.
+              </p>
+              <p class="text-xs text-yellow-600">
+                💡 <strong>Tip:</strong> For enterprise-grade scanning of large files, consider upgrading to our premium tier.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <!-- SHA256 Hash for Verification -->
         <div v-if="selectedFile && sha256Hash" class="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-5">
           <p class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
@@ -322,7 +346,7 @@
         >
           <RocketIcon v-if="!isUploading && !isScanning" class="w-6 h-6 mr-2" />
           <LoaderIcon v-else class="w-6 h-6 mr-2 animate-spin" />
-          {{ isScanning ? 'Scanning...' : (isUploading ? 'Uploading...' : (scanStatus === 'clean' ? 'Upload File' : 'Scan & Upload File')) }}
+          {{ isScanning ? 'Scanning...' : (isUploading ? 'Uploading...' : (scanStatus === 'clean' ? 'Upload File' : (scanStatus === 'skipped' ? 'Upload File (Unscanned)' : 'Scan & Upload File'))) }}
         </button>
       </div>
 
@@ -577,7 +601,18 @@ const processFile = async (file: File) => {
     const hash = await computeSHA256(file);
     sha256Hash.value = hash;
     
-    // Start pre-upload scan with ClamAV and VirusTotal
+    // Check if file is too large for scanning (>32MB)
+    const isTooLargeForScan = file.size > 32 * 1024 * 1024;
+    
+    if (isTooLargeForScan) {
+      // File is too large, skip scanning
+      console.warn('File too large for virus scanning (>32MB), skipping scan');
+      isScanning.value = false;
+      scanStatus.value = 'skipped';
+      return;
+    }
+    
+    // Start pre-upload scan with VirusTotal
     isScanning.value = true;
     scanStatus.value = 'pending';
     
@@ -612,6 +647,9 @@ const processFile = async (file: File) => {
       if (scanError.code === 'ERR_NETWORK' || scanError.message?.includes('Network Error')) {
         console.warn('Scanner service unavailable, proceeding without scan');
         scanStatus.value = 'clean';
+      } else if (scanError.response?.status === 413) {
+        console.warn('File too large for scanning, skipping scan');
+        scanStatus.value = 'skipped';
       } else {
         scanStatus.value = 'malicious';
         virusDetails.value = `Scan error: ${scanError.response?.data?.message || scanError.message || 'Unable to scan file. Please try again.'}`;
@@ -624,8 +662,11 @@ const processFile = async (file: File) => {
 };
 
 const uploadFile = async () => {
-  if (!selectedFile.value || !sha256Hash.value || scanStatus.value !== 'clean') return;
+  if (!selectedFile.value || !sha256Hash.value) return;
   if (isUploading.value) return; // Prevent double upload
+  
+  // Allow upload if scan is clean or skipped (for large files)
+  if (scanStatus.value !== 'clean' && scanStatus.value !== 'skipped') return;
 
   isUploading.value = true;
   uploadProgress.value = 0;
@@ -640,6 +681,7 @@ const uploadFile = async () => {
       ttlHours: ttlHours.value,
       maxUses: maxUses.value,
       encrypted: enableEncryption.value,
+      scanSkipped: scanStatus.value === 'skipped', // Include skip-scan flag
     });
 
     shareCode.value = metaResponse.shareCode;

@@ -164,6 +164,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       mimeType: metadata.mimeType,
       usesLeft: updatedMetadata.usesLeft,
       expiresAt: metadata.expiresAt,
+      scanSkipped: metadata.scanSkipped || false,
+      isQuarantined: false, // Always false here since infected files return earlier
       warning: updatedMetadata.usesLeft === 0 ? 'File will be deleted after this download' : undefined,
     });
   } catch (error: any) {

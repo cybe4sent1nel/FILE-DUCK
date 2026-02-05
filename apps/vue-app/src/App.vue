@@ -119,9 +119,12 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { UploadIcon, DownloadIcon, ClockIcon, ShieldCheckIcon, ZapIcon, FileIcon, FolderIcon, FileTextIcon, ImageIcon, FileCodeIcon, HomeIcon } from 'lucide-vue-next';
 import ParticleBackground from './components/ParticleBackground.vue';
 import NotificationContainer from './components/NotificationContainer.vue';
+
+const router = useRouter();
 
 const adsLoaded = ref(false);
 
@@ -209,7 +212,17 @@ const scrollToUpload = () => {
 };
 
 const scrollToDownload = () => {
-  router.push('/download');
+  if (router.currentRoute.value.path === '/') {
+    const downloadSection = document.querySelector('#download') || document.querySelector('.download-section');
+    downloadSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else {
+    router.push('/#download').then(() => {
+      setTimeout(() => {
+        const downloadSection = document.querySelector('#download') || document.querySelector('.download-section');
+        downloadSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    });
+  }
 };
 </script>
 

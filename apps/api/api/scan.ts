@@ -7,10 +7,11 @@ import crypto from 'crypto';
 const VIRUSTOTAL_API_KEY = process.env.VIRUSTOTAL_API_KEY || '';
 const VIRUSTOTAL_API_URL = 'https://www.virustotal.com/api/v3';
 const VIRUSTOTAL_THRESHOLD = 3; // If 3+ engines detect malware, flag as infected
+const MAX_SCAN_SIZE = 32 * 1024 * 1024; // 32MB - VirusTotal free tier limit
 
 interface ScanResponse {
   clean: boolean;
-  decision: 'clean' | 'infected' | 'suspicious';
+  decision: 'clean' | 'infected' | 'suspicious' | 'skipped';
   clamav: {
     infected: boolean;
     virus?: string;
@@ -20,6 +21,9 @@ interface ScanResponse {
     total: number;
   };
   score: number;
+  skipped?: boolean;
+  reason?: string;
+  maxScanSize?: number;
 }
 
 export const config = {
@@ -46,8 +50,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // Parse multipart form data
+    // VirusTotal Free API limit is 32MB
     const form = formidable({
-      maxFileSize: 100 * 1024 * 1024, // 100MB max
+      maxFileSize: 100 * 1024 * 1024, // Allow up to 100MB upload (will check actual size for scanning)
       keepExtensions: true,
     });
 
@@ -60,9 +65,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const file = Array.isArray(files.file) ? files.file[0] : files.file;
     const sha256Provided = Array.isArray(fields.sha256) ? fields.sha256[0] : fields.sha256;
+    const skipScan = Array.isArray(fields.skipScan) ? fields.skipScan[0] === 'true' : fields.skipScan === 'true';
 
     if (!file || !file.filepath) {
       return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // If skipScan is requested, return immediately
+    if (skipScan) {
+      fs.unlinkSync(file.filepath);
+      return res.status(200).json({
+        status: 'skipped',
+        decision: 'skipped',
+        message: 'File scanning skipped by user',
+        sha256: sha256Provided
+      });
+    }
+
+    // Check file size (VirusTotal free API limit)
+    if (file.size > 32 * 1024 * 1024) {
+      fs.unlinkSync(file.filepath);
+      return res.status(413).json({ 
+        error: 'File too large for scanning',
+        message: 'VirusTotal free API supports files up to 32MB. Larger files will be uploaded without scanning.',
+        maxSize: 32 * 1024 * 1024
+      });
     }
 
     // Verify SHA256 hash

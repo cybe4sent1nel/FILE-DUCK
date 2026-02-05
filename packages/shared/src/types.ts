@@ -13,6 +13,7 @@ export interface FileMetadata {
   scanStatus: ScanStatus;
   scanResults?: ScanResults;
   encrypted: boolean;
+  scanSkipped?: boolean;
 }
 
 export enum ScanStatus {
@@ -20,6 +21,7 @@ export enum ScanStatus {
   SCANNING = 'scanning',
   CLEAN = 'clean',
   INFECTED = 'infected',
+  SKIPPED = 'skipped',
   ERROR = 'error',
 }
 
@@ -45,6 +47,7 @@ export interface UploadMetaRequest {
   ttlHours?: number; // Default 24
   maxUses?: number; // Default 1 (one-time)
   encrypted?: boolean;
+  scanSkipped?: boolean;
 }
 
 export interface UploadMetaResponse {
