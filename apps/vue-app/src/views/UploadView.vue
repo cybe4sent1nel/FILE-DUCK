@@ -202,7 +202,7 @@
           </div>
         </div>
 
-        <!-- Scan Skipped Warning (For large files >32MB) -->
+        <!-- Scan Skipped Warning (For large files >100MB) -->
         <div v-else-if="scanStatus === 'skipped'" class="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-6">
           <div class="flex items-center space-x-4">
             <div class="flex-shrink-0">
@@ -214,13 +214,13 @@
                 <p class="text-xl font-bold text-yellow-800">⚠️ File Too Large for Scanning</p>
               </div>
               <p class="text-yellow-700 font-medium mb-2">
-                This file is larger than 32MB and cannot be scanned with our free VirusTotal tier.
+                This file is larger than 100MB and cannot be scanned with our malware scanner.
               </p>
               <p class="text-sm text-yellow-600 mb-3">
                 The file will be uploaded <strong>without virus scanning</strong>. Recipients will be warned that this file was not scanned.
               </p>
               <p class="text-xs text-yellow-600">
-                💡 <strong>Tip:</strong> For enterprise-grade scanning of large files, consider upgrading to our premium tier.
+                💡 <strong>Tip:</strong> Files up to 100MB are scanned using VirusTotal (≤32MB) and MetaDefender (32-100MB).
               </p>
             </div>
           </div>
@@ -312,7 +312,12 @@
               Enable client-side encryption (zero-knowledge)
             </label>
           </div>
-        </div>
+
+          <!-- Captcha Toggle -->
+          <CaptchaToggle v-model="requireCaptcha" />
+
+          <!-- Scan Toggle -->
+          <ScanToggle v-model="enableScan" />
 
         <!-- Upload Progress with Animation -->
         <div v-if="isUploading" class="space-y-5 bg-white rounded-xl p-8 border border-purple-100">
@@ -529,13 +534,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { Vue3Lottie } from 'vue3-lottie';
 import HowItWorks from '../components/HowItWorks.vue';
 import Testimonials from '../components/Testimonials.vue';
 import AboutSection from '../components/AboutSection.vue';
 import LiveActivityTracker from '../components/LiveActivityTracker.vue';
 import ScanningAnimation from '../components/ScanningAnimation.vue';
+import CaptchaToggle from '../components/CaptchaToggle.vue';
+import ScanToggle from '../components/ScanToggle.vue';
 import { useNotifications } from '../composables/useNotifications';
 import TrustedBy from '../components/TrustedBy.vue';
 import CTASection from '../components/CTASection.vue';
@@ -572,9 +579,19 @@ const ttlHours = ref(24);
 const maxUses = ref(1);
 const enableEncryption = ref(false);
 const isScanning = ref(false);
-const scanStatus = ref<'pending' | 'clean' | 'malicious' | null>(null);
+const scanStatus = ref<'pending' | 'clean' | 'malicious' | 'skipped' | null>(null);
 const virusDetails = ref('');
 const allowQuarantine = ref(false);
+const requireCaptcha = ref(false);
+const enableScan = ref(true);
+
+// Watch file size changes to adjust scan toggle default
+watch(selectedFile, (file) => {
+  if (file) {
+    // Default to skip scan for large files (>50MB), otherwise enable
+    enableScan.value = file.size <= 50 * 1024 * 1024;
+  }
+});
 
 const handleFileSelect = async (event: Event) => {
   const target = event.target as HTMLInputElement;
@@ -601,12 +618,13 @@ const processFile = async (file: File) => {
     const hash = await computeSHA256(file);
     sha256Hash.value = hash;
     
-    // Check if file is too large for scanning (>32MB)
-    const isTooLargeForScan = file.size > 32 * 1024 * 1024;
+    // Check if file is too large for scanning (>100MB)
+    const isTooLargeForScan = file.size > 100 * 1024 * 1024;
     
-    if (isTooLargeForScan) {
-      // File is too large, skip scanning
-      console.warn('File too large for virus scanning (>32MB), skipping scan');
+    // Check if user disabled scanning
+    if (!enableScan.value || isTooLargeForScan) {
+      // File scanning is disabled or file is too large
+      console.warn(enableScan.value ? 'File too large for virus scanning (>100MB), skipping scan' : 'Scanning disabled by user');
       isScanning.value = false;
       scanStatus.value = 'skipped';
       return;
@@ -682,6 +700,7 @@ const uploadFile = async () => {
       maxUses: maxUses.value,
       encrypted: enableEncryption.value,
       scanSkipped: scanStatus.value === 'skipped', // Include skip-scan flag
+      requireCaptcha: requireCaptcha.value, // Include captcha requirement
     });
 
     shareCode.value = metaResponse.shareCode;
