@@ -56,7 +56,9 @@ const renderTurnstile = async () => {
     return;
   }
 
-  if (!props.siteKey || props.siteKey === 'undefined') {
+  const cleanSiteKey = props.siteKey?.trim();
+  
+  if (!cleanSiteKey || cleanSiteKey === 'undefined') {
     console.error('Invalid site key:', props.siteKey);
     emit('error', 'Invalid captcha site key');
     return;
@@ -67,7 +69,7 @@ const renderTurnstile = async () => {
     await new Promise(resolve => setTimeout(resolve, 100));
     
     widgetId = window.turnstile.render(turnstileRef.value, {
-      sitekey: props.siteKey,
+      sitekey: cleanSiteKey,
       callback: (token: string) => {
         console.log('Turnstile verified successfully');
         emit('verified', token);
