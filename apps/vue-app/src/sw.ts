@@ -65,38 +65,42 @@ registerRoute(
 
 // Custom navigation handler - redirect to offline page when offline
 const navigationHandler = async (options: any) => {
-  const { event } = options;
+  const { request } = options;
+  
   try {
     // Try to get from network first
-    const response = await fetch(event.request);
+    const response = await fetch(request);
     return response;
   } catch (error) {
-    // If network fails, check if we're truly offline
-    if (!navigator.onLine) {
-      // Check if requesting the offline page itself
-      const url = new URL(event.request.url);
-      if (url.pathname === '/offline') {
-        // Try to return cached offline page
-        const cache = await caches.open('precache');
-        const cachedResponse = await cache.match('/offline');
-        if (cachedResponse) {
-          return cachedResponse;
-        }
+    // Network request failed - serve from cache or offline page
+    const url = new URL(request.url);
+    
+    // Try to get from cache first
+    const cache = await caches.open('workbox-precache-v2-' + self.location.origin);
+    let cachedResponse = await cache.match(request);
+    
+    // If not in cache and offline, serve the offline page
+    if (!cachedResponse) {
+      // Try to get the offline page from cache
+      const offlineResponse = await cache.match('/offline');
+      if (offlineResponse) {
+        return offlineResponse;
       }
       
-      // For any navigation request when offline, redirect to offline page
-      return Response.redirect('/offline', 302);
+      // Fallback to index.html if offline page not cached
+      const indexResponse = await cache.match('/');
+      if (indexResponse) {
+        return indexResponse;
+      }
     }
     
-    // If online but request failed, try cache
-    const cache = await caches.open('precache');
-    const cachedResponse = await cache.match(event.request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-    
-    // Last resort - show offline page
-    return Response.redirect('/offline', 302);
+    return cachedResponse || new Response('Offline - please check your connection', {
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: new Headers({
+        'Content-Type': 'text/html'
+      })
+    });
   }
 };
 
