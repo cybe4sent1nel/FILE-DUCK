@@ -5,6 +5,7 @@ import HistoryView from '../views/HistoryView.vue';
 import PrivacyView from '../views/PrivacyView.vue';
 import TermsView from '../views/TermsView.vue';
 import NotFoundView from '../views/NotFoundView.vue';
+import OfflineView from '../views/OfflineView.vue';
 
 const routes = [
   {
@@ -36,6 +37,11 @@ const routes = [
     path: '/terms',
     name: 'Terms',
     component: TermsView,
+  },
+  {
+    path: '/offline',
+    name: 'Offline',
+    component: OfflineView,
   },
   {
     path: '/:pathMatch(.*)*',
