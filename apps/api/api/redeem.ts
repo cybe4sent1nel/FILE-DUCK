@@ -123,31 +123,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Decrement uses atomically
-    const updatedMetadata = await decrementUses(shareCode);
-
-    if (!updatedMetadata) {
-      return res.status(500).json({
-        error: 'Failed to process download',
-        code: 'SERVER_ERROR',
-      });
-    }
-
-    // SECURITY: Auto-delete if download limit reached
-    if (updatedMetadata.usesLeft <= 0 && metadata.githubReleaseId) {
-      try {
-        // Import cleanup function
-        const { cleanupSpecificFile } = await import('../lib/cleanup.js');
-        await cleanupSpecificFile(shareCode);
-        console.log(`Auto-deleted file ${metadata.filename} - download limit reached`);
-      } catch (error: any) {
-        console.error('Failed to auto-delete after download limit:', error);
-      }
-    }
-
+    // Don't decrement uses yet - wait for actual download
+    // Just return the download information
+    
     // Generate download URL based on storage type
     let downloadUrl: string;
-    let fileContent: string | undefined;
 
     if (metadata.downloadUrl) {
       // GitHub storage - use direct download URL
@@ -169,11 +149,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       size: metadata.size,
       sha256: metadata.sha256,
       mimeType: metadata.mimeType,
-      usesLeft: updatedMetadata.usesLeft,
+      usesLeft: metadata.usesLeft, // Current count, will be decremented after download
       expiresAt: metadata.expiresAt,
       scanSkipped: metadata.scanSkipped || false,
       isQuarantined: false, // Always false here since infected files return earlier
-      warning: updatedMetadata.usesLeft === 0 ? 'File will be deleted after this download' : undefined,
     });
   } catch (error: any) {
     console.error('Redeem error:', error);

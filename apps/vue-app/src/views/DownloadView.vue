@@ -470,12 +470,29 @@ const initiateDownload = async () => {
     success('✅ Download completed successfully!');
     console.log(`✅ File saved: ${fileInfo.value.filename}`);
     
-    // Update history uses count after successful download
-    import('../services/uploadHistory').then(({ updateUploadHistory }) => {
-      updateUploadHistory(inputCode.value, {
-        usesLeft: fileInfo.value.usesLeft,
+    // Confirm download on backend (decrements uses and auto-deletes if needed)
+    try {
+      const confirmResponse = await fetch(`${import.meta.env.VITE_API_URL}/confirm-download`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shareCode: inputCode.value }),
       });
-    });
+      const confirmData = await confirmResponse.json();
+      console.log('✅ Download confirmed:', confirmData);
+      
+      // Update history uses count after confirmation
+      import('../services/uploadHistory').then(({ updateUploadHistory }) => {
+        updateUploadHistory(inputCode.value, {
+          usesLeft: confirmData.usesLeft || 0,
+        });
+      });
+      
+      // Update local uses count
+      fileInfo.value.usesLeft = confirmData.usesLeft || 0;
+    } catch (err) {
+      console.error('Failed to confirm download:', err);
+      // Still show success since file was downloaded
+    }
     
     // Keep success animation visible for 5 seconds
     setTimeout(() => {

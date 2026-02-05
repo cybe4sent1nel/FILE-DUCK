@@ -41,6 +41,7 @@ const getHealthHandler = async () => (await import('./api/health.js')).default;
 const getUploadMetaHandler = async () => (await import('./api/upload-meta.js')).default;
 const getCompleteUploadHandler = async () => (await import('./api/complete-upload.js')).default;
 const getRedeemHandler = async () => (await import('./api/redeem.js')).default;
+const getConfirmDownloadHandler = async () => (await import('./api/confirm-download.js')).default;
 const getGitHubUploadHandler = async () => (await import('./api/github-upload.js')).default;
 const getScanHandler = async () => (await import('./api/scan.js')).default;
 const getDeleteFileHandler = async () => (await import('./api/delete-file.js')).default;
@@ -80,6 +81,16 @@ app.post('/api/complete-upload', async (req: Request, res: Response) => {
 app.post('/api/redeem', async (req: Request, res: Response) => {
   try {
     await (await getRedeemHandler())(req as any, res as any);
+  } catch (error: any) {
+    if (!res.headersSent) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+});
+
+app.post('/api/confirm-download', async (req: Request, res: Response) => {
+  try {
+    await (await getConfirmDownloadHandler())(req as any, res as any);
   } catch (error: any) {
     if (!res.headersSent) {
       res.status(500).json({ error: error.message });
