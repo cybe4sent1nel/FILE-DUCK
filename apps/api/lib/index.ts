@@ -1,3 +1,3 @@
-export * from './redis';
-export * from './s3';
-export * from './cdn';
+export * from './redis.js';
+export * from './s3.js';
+export * from './cdn.js';

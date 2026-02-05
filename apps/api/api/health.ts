@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 // @ts-ignore - lib files are compiled separately
-import redis from '../lib/redis';
+import redis from '../lib/redis.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Add CORS headers
