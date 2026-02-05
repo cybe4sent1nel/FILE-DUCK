@@ -1,27 +1,28 @@
 <template>
-  <div class="max-w-3xl mx-auto">
-    <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border-2 border-yellow-100">
-      <div class="flex items-center justify-center mb-8">
-        <img src="/logo.png" alt="FileDuck" class="h-16 w-16 mr-4 transform hover:rotate-12 transition-transform" />
-        <h1 class="text-4xl font-bold text-center bg-gradient-to-r from-yellow-600 to-purple-500 bg-clip-text text-transparent pb-1">
+  <div class="max-w-3xl mx-auto px-2 sm:px-4">
+    <div class="bg-white/80 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 border-2 border-yellow-100">
+      <div class="flex flex-col sm:flex-row items-center justify-center mb-6 sm:mb-8 gap-3 sm:gap-0">
+        <img src="/logo.png" alt="FileDuck" class="h-12 sm:h-16 w-12 sm:w-16 sm:mr-4 transform hover:rotate-12 transition-transform" />
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-center bg-gradient-to-r from-yellow-600 to-purple-500 bg-clip-text text-transparent pb-1">
           Download File
         </h1>
       </div>
 
       <div v-if="!downloadUrl" class="space-y-6">
         <!-- Verify Code Animation -->
-        <div class="flex justify-center bg-gradient-to-br from-yellow-50 to-cream-100 rounded-2xl p-8">
+        <div class="flex justify-center bg-gradient-to-br from-yellow-50 to-cream-100 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8">
           <Vue3Lottie
             :animationData="VerifyCodeAnimation"
-            :height="200"
-            :width="200"
+            :height="150"
+            :width="150"
+            class="sm:!h-[180px] sm:!w-[180px] md:!h-[200px] md:!w-[200px]"
             :loop="true"
           />
         </div>
 
         <!-- Share Code Input -->
-        <div class="bg-gradient-to-r from-purple-50 to-yellow-50 rounded-xl p-6 border-2 border-purple-200">
-          <label class="block text-base font-bold text-purple-700 mb-3 flex items-center">
+        <div class="bg-gradient-to-r from-purple-50 to-yellow-50 rounded-xl p-4 sm:p-6 border-2 border-purple-200">
+          <label class="block text-sm sm:text-base font-bold text-purple-700 mb-3 flex items-center justify-center sm:justify-start">
             <KeyIcon class="w-5 h-5 mr-2" />
             Enter Share Code
           </label>
@@ -29,24 +30,25 @@
             v-model="inputCode"
             type="text"
             placeholder="e.g., aBc123XyZ9"
-            class="input-field text-center text-3xl font-mono uppercase tracking-wider"
+            class="input-field text-center text-xl sm:text-2xl md:text-3xl font-mono uppercase tracking-wider"
             @keyup.enter="redeemCode"
             maxlength="10"
           />
         </div>
 
         <!-- CAPTCHA (if required) -->
-        <div v-if="captchaRequired" class="bg-gradient-to-r from-yellow-100 to-yellow-50 border-2 border-yellow-400 rounded-xl p-6 shadow-lg">
-          <p class="text-base font-bold text-yellow-900 mb-4 flex items-center">
-            <AlertTriangleIcon class="w-6 h-6 mr-2" />
+        <div v-if="captchaRequired" class="bg-gradient-to-r from-yellow-100 to-yellow-50 border-2 border-yellow-400 rounded-xl p-4 sm:p-6 shadow-lg">
+          <p class="text-sm sm:text-base font-bold text-yellow-900 mb-4 flex items-center justify-center sm:justify-start">
+            <AlertTriangleIcon class="w-5 sm:w-6 h-5 sm:h-6 mr-2" />
             CAPTCHA verification required
           </p>
           <div class="flex justify-center">
-            <!-- Placeholder for reCAPTCHA widget -->
-            <div class="bg-white rounded-lg p-8 text-center shadow-inner">
-              <p class="text-base text-gray-600 font-semibold">reCAPTCHA Widget</p>
-              <p class="text-sm text-gray-500">(Add Google reCAPTCHA script)</p>
-            </div>
+            <TurnstileWidget
+              :siteKey="turnstilesiteKey"
+              action="download"
+              @verified="handleCaptchaVerified"
+              @error="handleCaptchaError"
+            />
           </div>
         </div>
 
@@ -80,10 +82,10 @@
         <button
           @click="redeemCode"
           :disabled="!inputCode || isRedeeming"
-          class="btn-primary w-full text-xl py-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+          class="btn-primary w-full text-base sm:text-lg md:text-xl py-3 sm:py-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
         >
-          <LoaderIcon v-if="isRedeeming" class="w-6 h-6 mr-2 animate-spin" />
-          <UnlockIcon v-else class="w-6 h-6 mr-2" />
+          <LoaderIcon v-if="isRedeeming" class="w-5 sm:w-6 h-5 sm:h-6 mr-2 animate-spin" />
+          <UnlockIcon v-else class="w-5 sm:w-6 h-5 sm:h-6 mr-2" />
           {{ isRedeeming ? 'Verifying...' : 'Access File' }}
         </button>
       </div>
@@ -146,14 +148,15 @@
           </div>
         </div>
 
-        <div class="text-center bg-gradient-to-r from-yellow-50 to-cream-100 rounded-2xl p-8">
+        <div class="text-center bg-gradient-to-r from-yellow-50 to-cream-100 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8">
           <Vue3Lottie
             :animationData="DataDownloadingAnimation"
-            :height="220"
-            :width="220"
+            :height="160"
+            :width="160"
+            class="sm:!h-[200px] sm:!w-[200px] md:!h-[220px] md:!w-[220px]"
             :loop="true"
           />
-          <h2 class="text-3xl font-bold mb-2" :class="fileInfo.isQuarantined ? 'text-red-600' : 'text-green-600'">
+          <h2 class="text-xl sm:text-2xl md:text-3xl font-bold mb-2" :class="fileInfo.isQuarantined ? 'text-red-600' : 'text-green-600'">
             {{ fileInfo.isQuarantined ? 'Quarantined File Access' : 'File Ready for Download' }}
           </h2>
         </div>
@@ -242,14 +245,14 @@
         <!-- Download Button -->
         <button
           @click="initiateDownload"
-          class="btn-primary w-full text-xl py-4 flex items-center justify-center shadow-xl hover:shadow-2xl"
+          class="btn-primary w-full text-base sm:text-lg md:text-xl py-3 sm:py-4 flex items-center justify-center shadow-xl hover:shadow-2xl"
         >
-          <DownloadIcon class="w-6 h-6 mr-2" />
+          <DownloadIcon class="w-5 sm:w-6 h-5 sm:h-6 mr-2" />
           Download File
         </button>
 
-        <button @click="resetForm" class="btn-secondary w-full flex items-center justify-center text-xl py-4 shadow-xl hover:shadow-2xl">
-          <RefreshCwIcon class="w-6 h-6 mr-2" />
+        <button @click="resetForm" class="btn-secondary w-full flex items-center justify-center text-base sm:text-lg md:text-xl py-3 sm:py-4 shadow-xl hover:shadow-2xl">
+          <RefreshCwIcon class="w-5 sm:w-6 h-5 sm:h-6 mr-2" />
           Download Another File
         </button>
 
@@ -294,7 +297,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { Vue3Lottie } from 'vue3-lottie';
 import {
@@ -305,6 +308,7 @@ import {
 import { formatFileSize, formatTimeRemaining } from '@fileduck/shared';
 import { redeemShareCode } from '../services/api';
 import { useNotifications } from '../composables/useNotifications';
+import TurnstileWidget from '../components/TurnstileWidget.vue';
 
 // Import animations
 import VerifyCodeAnimation from '../../../../animations/Verify Code.json';
@@ -317,6 +321,7 @@ const { success, error } = useNotifications();
 const inputCode = ref('');
 const isRedeeming = ref(false);
 const captchaRequired = ref(false);
+const captchaToken = ref('');
 const errorMessage = ref('');
 const downloadUrl = ref('');
 const downloadProgress = ref(0);
@@ -331,6 +336,8 @@ const fileInfo = ref({
   scanSkipped: false,
 });
 
+const turnstilesiteKey = computed(() => import.meta.env.VITE_TURNSTILE_SITE_KEY || '0x4AAAAAACYFda-OmtIrzikn');
+
 onMounted(() => {
   // Check if share code is in URL
   if (route.params.code) {
@@ -341,6 +348,10 @@ onMounted(() => {
 
 const redeemCode = async () => {
   if (!inputCode.value) return;
+  if (captchaRequired.value && !captchaToken.value) {
+    errorMessage.value = 'Please complete the CAPTCHA verification';
+    return;
+  }
 
   isRedeeming.value = true;
   errorMessage.value = '';
@@ -348,7 +359,7 @@ const redeemCode = async () => {
   try {
     const response = await redeemShareCode({
       shareCode: inputCode.value,
-      captchaToken: undefined, // TODO: Implement reCAPTCHA
+      captchaToken: captchaToken.value || undefined,
     });
 
     downloadUrl.value = response.downloadUrl;
@@ -378,6 +389,18 @@ const redeemCode = async () => {
   } finally {
     isRedeeming.value = false;
   }
+};
+
+const handleCaptchaVerified = (token: string) => {
+  captchaToken.value = token;
+  errorMessage.value = '';
+  // Auto-submit after captcha verification
+  redeemCode();
+};
+
+const handleCaptchaError = (error: string) => {
+  errorMessage.value = `Captcha error: ${error}`;
+  captchaToken.value = '';
 };
 
 const downloadSuccess = ref(false);
@@ -449,6 +472,7 @@ const resetForm = () => {
   downloadUrl.value = '';
   errorMessage.value = '';
   captchaRequired.value = false;
+  captchaToken.value = '';
   downloadProgress.value = 0;
 };
 

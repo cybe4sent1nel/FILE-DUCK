@@ -10,10 +10,10 @@
         </p>
         
         <div class="flex flex-col md:flex-row justify-center gap-4">
-          <router-link to="/" class="bg-gradient-to-r from-purple-400 to-purple-500 hover:from-purple-500 hover:to-purple-600 text-white font-semibold py-4 px-10 rounded-lg text-lg transition-all transform hover:scale-105 shadow-md hover:shadow-lg flex items-center justify-center">
+          <a href="/#upload" @click.prevent="scrollToUpload" class="bg-gradient-to-r from-purple-400 to-purple-500 hover:from-purple-500 hover:to-purple-600 text-white font-semibold py-4 px-10 rounded-lg text-lg transition-all transform hover:scale-105 shadow-md hover:shadow-lg flex items-center justify-center cursor-pointer">
             <UploadIcon class="w-6 h-6 mr-2" />
             Upload a File Now
-          </router-link>
+          </a>
           <router-link to="/download" class="bg-gradient-to-r from-lemon-400 to-lemon-500 hover:from-lemon-500 hover:to-lemon-600 text-gray-800 font-semibold py-4 px-10 rounded-lg text-lg transition-all transform hover:scale-105 shadow-md hover:shadow-lg flex items-center justify-center">
             <DownloadIcon class="w-6 h-6 mr-2" />
             Download a File
@@ -52,5 +52,22 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router';
 import { UploadIcon, DownloadIcon, LockIcon, ZapIcon, GlobeIcon } from 'lucide-vue-next';
+
+const router = useRouter();
+
+const scrollToUpload = () => {
+  if (router.currentRoute.value.path !== '/') {
+    router.push('/').then(() => {
+      setTimeout(() => {
+        const uploadSection = document.querySelector('#upload');
+        uploadSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    });
+  } else {
+    const uploadSection = document.querySelector('#upload');
+    uploadSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+};
 </script>

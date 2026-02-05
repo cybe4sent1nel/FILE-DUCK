@@ -1,20 +1,21 @@
 <template>
-  <div class="max-w-5xl mx-auto">
+  <div class="max-w-5xl mx-auto px-2 sm:px-4">
     <!-- Hero Section -->
-    <div class="text-center mb-12 max-w-4xl mx-auto -mt-4">
+    <div class="text-center mb-8 sm:mb-12 max-w-4xl mx-auto -mt-4">
       <!-- Designer Cat Animation -->
       <div class="flex justify-center mb-4">
         <Vue3Lottie
           :animationData="DesignerCatAnimation"
-          :height="280"
-          :width="280"
+          :height="200"
+          :width="200"
+          class="sm:!h-[250px] sm:!w-[250px] md:!h-[280px] md:!w-[280px]"
           :loop="true"
         />
       </div>
       
-      <div class="flex flex-col md:flex-row items-center justify-center gap-6 mb-4">
-        <img src="/logo.png" alt="FileDuck Logo" class="h-32 md:h-40 w-32 md:w-40 object-contain" />
-        <h1 class="text-5xl md:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-purple-400 via-purple-300 to-lemon-400 bg-clip-text text-transparent leading-tight text-center md:text-left pb-2">
+      <div class="flex flex-col md:flex-row items-center justify-center gap-4 sm:gap-6 mb-4 px-2">
+        <img src="/logo.png" alt="FileDuck Logo" class="h-24 sm:h-32 md:h-40 w-24 sm:w-32 md:w-40 object-contain" />
+        <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold bg-gradient-to-r from-purple-400 via-purple-300 to-lemon-400 bg-clip-text text-transparent leading-tight text-center md:text-left pb-2">
           Share Files Securely
         </h1>
       </div>
@@ -56,7 +57,7 @@
     </div>
 
     <!-- Main Upload Card -->
-    <div id="upload" class="bg-white rounded-3xl shadow-xl p-10 border border-purple-100 max-w-3xl mx-auto mb-20 scroll-mt-20">
+    <div id="upload" class="bg-white rounded-2xl sm:rounded-3xl shadow-xl p-4 sm:p-6 md:p-10 border border-purple-100 max-w-3xl mx-auto mb-12 sm:mb-20 scroll-mt-20">
 
       <div v-if="!shareCode" class="space-y-6">
         <!-- File Selection with Animation -->
@@ -66,7 +67,7 @@
           @dragenter="isDragging = true"
           @dragleave="isDragging = false"
           :class="[
-            'border-3 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-300',
+            'border-2 sm:border-3 border-dashed rounded-xl sm:rounded-2xl p-6 sm:p-8 md:p-12 text-center cursor-pointer transition-all duration-300',
             isDragging 
               ? 'border-purple-400 bg-purple-50' 
               : 'border-purple-200 hover:border-purple-300 hover:bg-purple-50/30',
@@ -84,15 +85,16 @@
             <div v-if="!selectedFile" class="flex flex-col items-center">
               <Vue3Lottie
                 :animationData="UploadFilesAnimation"
-                :height="160"
-                :width="160"
+                :height="120"
+                :width="120"
+                class="sm:!h-[140px] sm:!w-[140px] md:!h-[160px] md:!w-[160px]"
                 :loop="true"
               />
-              <p class="text-2xl font-bold text-gray-800 mt-6">
+              <p class="text-xl sm:text-2xl font-bold text-gray-800 mt-4 sm:mt-6 px-2">
                 Drop your file here
               </p>
-              <p class="text-base text-gray-500 mt-2">or click to browse</p>
-              <p class="text-sm text-gray-400 mt-4 flex items-center justify-center">
+              <p class="text-sm sm:text-base text-gray-500 mt-2">or click to browse</p>
+              <p class="text-xs sm:text-sm text-gray-400 mt-3 sm:mt-4 flex items-center justify-center">
                 <HardDriveIcon class="w-4 h-4 mr-2" />
                 Maximum file size: 5GB
               </p>
