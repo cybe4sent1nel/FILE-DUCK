@@ -225,6 +225,20 @@
           </div>
         </div>
 
+        <!-- Download Success Animation -->
+        <div v-if="downloadSuccess" class="bg-gradient-to-r from-green-50 to-emerald-100 rounded-xl p-6 border-2 border-green-300">
+          <div class="flex flex-col items-center">
+            <Vue3Lottie
+              :animationData="DownloadSuccessAnimation"
+              :height="160"
+              :width="160"
+              :loop="true"
+            />
+            <p class="text-xl font-bold text-green-800 mt-4">✅ Download Complete!</p>
+            <p class="text-sm text-green-600 mt-2">Check your downloads folder</p>
+          </div>
+        </div>
+
         <!-- Download Button -->
         <button
           @click="initiateDownload"
@@ -296,6 +310,7 @@ import { useNotifications } from '../composables/useNotifications';
 import VerifyCodeAnimation from '../../../../animations/Verify Code.json';
 import DataDownloadingAnimation from '../../../../animations/Data Downloading.json';
 import ShockedDuckAnimation from '../../../../animations/Shocked Duck.json';
+import DownloadSuccessAnimation from '../../../../animations/download success.json';
 
 const route = useRoute();
 const { success, error } = useNotifications();
@@ -365,23 +380,50 @@ const redeemCode = async () => {
   }
 };
 
+const downloadSuccess = ref(false);
+
 const initiateDownload = async () => {
   if (!downloadUrl.value) return;
 
   try {
-    downloadProgress.value = 0;
-    success('📥 Download started! Check your downloads folder...');
+    downloadProgress.value = 1;
+    success('📥 Download started! Please wait...');
     
-    // Use direct link download instead of fetch to avoid CORS issues
+    // Fetch with progress tracking
+    const response = await fetch(downloadUrl.value);
+    if (!response.ok) throw new Error('Download failed');
+    
+    const reader = response.body?.getReader();
+    const contentLength = +(response.headers.get('Content-Length') || fileInfo.value.size);
+
+    let receivedLength = 0;
+    const chunks = [];
+
+    if (reader) {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        chunks.push(value);
+        receivedLength += value.length;
+        downloadProgress.value = Math.min(Math.round((receivedLength / contentLength) * 100), 99);
+      }
+    }
+
+    // Create blob and download
+    const blob = new Blob(chunks);
+    const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = downloadUrl.value;
+    a.href = url;
     a.download = fileInfo.value.filename;
-    a.target = '_blank';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
 
     downloadProgress.value = 100;
+    downloadSuccess.value = true;
+    success('✅ Download completed successfully!');
     
     // Update history uses count after successful download
     import('../services/uploadHistory').then(({ updateUploadHistory }) => {
@@ -392,11 +434,13 @@ const initiateDownload = async () => {
     
     setTimeout(() => {
       downloadProgress.value = 0;
-    }, 2000);
+      downloadSuccess.value = false;
+    }, 4000);
   } catch (err) {
     console.error('Download failed:', err);
     error('Download failed. Please try again.');
     downloadProgress.value = 0;
+    downloadSuccess.value = false;
   }
 };
 

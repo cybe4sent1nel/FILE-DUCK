@@ -735,11 +735,12 @@ const uploadFile = async () => {
               throw new Error(errorMsg);
             }
             
-            // Simulate progress for UX
-            for (let i = 0; i <= 100; i += 10) {
+            // Simulate progress for UX with smoother updates
+            for (let i = 1; i <= 100; i += 2) {
               uploadProgress.value = i;
-              await new Promise(r => setTimeout(r, 50));
+              await new Promise(r => setTimeout(r, 30));
             }
+            uploadProgress.value = 100;
             resolve(null);
           } catch (err) {
             reject(err);
