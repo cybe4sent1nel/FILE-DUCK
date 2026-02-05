@@ -27,8 +27,18 @@
           It seems you've lost your internet connection. Your files are safe, but you'll need to reconnect to continue.
         </p>
 
+        <!-- Troubleshooting Toggle -->
+        <button
+          @click="showTroubleshooting = !showTroubleshooting"
+          class="mb-8 inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium transition-colors"
+        >
+          <Lightbulb class="w-5 h-5" />
+          {{ showTroubleshooting ? 'Hide' : 'Show' }} Troubleshooting Steps
+          <ChevronDown class="w-4 h-4 transition-transform" :class="{ 'rotate-180': showTroubleshooting }" />
+        </button>
+
         <!-- Troubleshooting Steps -->
-        <div class="bg-white/80 backdrop-blur rounded-xl p-6 mb-8 text-left shadow-lg">
+        <div v-if="showTroubleshooting" class="bg-white/80 backdrop-blur rounded-xl p-6 mb-8 text-left shadow-lg">
           <div class="flex items-center gap-2 mb-4">
             <Lightbulb class="w-5 h-5 text-yellow-500" />
             <h3 class="text-xl font-semibold text-gray-800">Troubleshooting Steps</h3>
@@ -120,7 +130,8 @@ import {
   ToggleLeft, 
   RefreshCw, 
   Home,
-  Lightbulb
+  Lightbulb,
+  ChevronDown
 } from 'lucide-vue-next';
 import NoInternetAnimation from '../../../../animations/No internet connection.json';
 import { useRouter } from 'vue-router';
@@ -144,6 +155,7 @@ const duckMessages = [
 ];
 
 const wittyMessage = ref(duckMessages[Math.floor(Math.random() * duckMessages.length)]);
+const showTroubleshooting = ref(false);
 
 const retryConnection = async () => {
   isRetrying.value = true;

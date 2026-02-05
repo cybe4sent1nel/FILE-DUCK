@@ -27,8 +27,18 @@
           {{ errorDescription || 'Something unexpected happened. Our ducks are working on it!' }}
         </p>
 
+        <!-- Troubleshooting Toggle -->
+        <button
+          @click="showTroubleshooting = !showTroubleshooting"
+          class="mb-8 inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium transition-colors"
+        >
+          <Lightbulb class="w-5 h-5" />
+          {{ showTroubleshooting ? 'Hide' : 'Show' }} Troubleshooting Steps
+          <ChevronDown class="w-4 h-4 transition-transform" :class="{ 'rotate-180': showTroubleshooting }" />
+        </button>
+
         <!-- Troubleshooting Steps -->
-        <div class="bg-white/80 backdrop-blur rounded-xl p-6 mb-8 text-left shadow-lg">
+        <div v-if="showTroubleshooting" class="bg-white/80 backdrop-blur rounded-xl p-6 mb-8 text-left shadow-lg">
           <div class="flex items-center gap-2 mb-4">
             <Lightbulb class="w-5 h-5 text-yellow-500" />
             <h3 class="text-xl font-semibold text-gray-800">Try these steps</h3>
@@ -114,7 +124,8 @@ import {
   Lightbulb,
   Trash2,
   Clock,
-  MessageCircle
+  MessageCircle,
+  ChevronDown
 } from 'lucide-vue-next';
 import ErrorAnimation from '../../../../animations/Error.json';
 
@@ -143,6 +154,7 @@ const duckMessages = [
 ];
 
 const wittyMessage = ref(duckMessages[Math.floor(Math.random() * duckMessages.length)]);
+const showTroubleshooting = ref(false);
 
 const reloadPage = () => {
   window.location.reload();
