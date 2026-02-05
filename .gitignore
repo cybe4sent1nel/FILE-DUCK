@@ -42,3 +42,7 @@ coverage/
 .vercel/
 *.tsbuildinfo
 .vercel
+.env.vercel.production
+deploy-railway.*
+RAILWAY_DEPLOYMENT.md
+.railway/

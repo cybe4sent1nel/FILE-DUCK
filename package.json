@@ -19,6 +19,8 @@
     "docker:restart": "docker-compose restart",
     "docker:clean": "docker-compose down -v",
     "docker:check": "node scripts/check-docker.js",
+    "railway:deploy": "bash deploy-railway.sh",
+    "railway:deploy:windows": "powershell -ExecutionPolicy Bypass -File deploy-railway.ps1",
     "setup": "pnpm install",
     "stop": "pnpm run docker:down"
   },

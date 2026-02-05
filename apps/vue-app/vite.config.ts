@@ -25,6 +25,12 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json,vue,txt,woff2}'],
         globIgnores: ['**/node_modules/**/*', 'sw.js', 'workbox-*.js'],
+        // Pre-cache only offline, error, and history pages
+        additionalManifestEntries: [
+          { url: '/offline', revision: '2' },
+          { url: '/error', revision: '2' },
+          { url: '/history', revision: '2' }
+        ],
       },
       workbox: {
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
