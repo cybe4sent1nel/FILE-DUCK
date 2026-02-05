@@ -21,8 +21,20 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json({ limit: '75mb' })); // 50MB chunks + overhead
-app.use(express.urlencoded({ extended: true, limit: '75mb' }));
+
+// Skip body parsing for multipart/form-data routes (github-upload needs raw stream)
+app.use((req, res, next) => {
+  if (req.path === '/api/github-upload' && req.headers['content-type']?.includes('multipart/form-data')) {
+    return next();
+  }
+  express.json({ limit: '75mb' })(req, res, next);
+});
+app.use((req, res, next) => {
+  if (req.path === '/api/github-upload' && req.headers['content-type']?.includes('multipart/form-data')) {
+    return next();
+  }
+  express.urlencoded({ extended: true, limit: '75mb' })(req, res, next);
+});
 
 // Lazy load Vercel handlers with dynamic imports for ESM
 const getHealthHandler = async () => (await import('./api/health.js')).default;

@@ -68,9 +68,9 @@ const navigationHandler = async (options: any) => {
   const { request } = options;
   const url = new URL(request.url);
   
-  // Don't cache these pages - always try network
-  const noCachePages = ['/history', '/offline'];
-  const isNoCachePage = noCachePages.some(page => url.pathname === page || url.pathname.startsWith(page + '/'));
+  // Pages to cache for offline use
+  const cacheablePages = ['/history', '/offline', '/error'];
+  const isCacheablePage = cacheablePages.some(page => url.pathname === page || url.pathname.startsWith(page + '/'));
   
   try {
     // Try to get from network first with timeout
@@ -82,46 +82,36 @@ const navigationHandler = async (options: any) => {
       cache: 'no-cache'
     });
     clearTimeout(timeoutId);
+    
+    // Cache the response only for cacheable pages
+    if (response.ok && isCacheablePage) {
+      const cache = await caches.open('pages-cache');
+      cache.put(request, response.clone());
+    }
+    
     return response;
   } catch (error) {
     // Network request failed or timed out
     console.log('[SW] Network failed for:', url.pathname);
     
-    // Always show offline page for no-cache pages when network fails
-    if (isNoCachePage || url.pathname === '/') {
-      const cacheNames = await caches.keys();
-      for (const cacheName of cacheNames) {
-        const cache = await caches.open(cacheName);
-        const offlineResponse = await cache.match('/offline');
-        if (offlineResponse) {
-          console.log('[SW] Serving offline page');
-          return offlineResponse;
-        }
-      }
-    }
-    
-    // Try to get from cache for other pages
-    const cacheNames = await caches.keys();
-    for (const cacheName of cacheNames) {
-      const cache = await caches.open(cacheName);
+    // For cacheable pages, try to serve from cache
+    if (isCacheablePage) {
+      const cache = await caches.open('pages-cache');
       const cachedResponse = await cache.match(request);
       if (cachedResponse) {
+        console.log('[SW] Serving from cache:', url.pathname);
         return cachedResponse;
       }
     }
     
-    // Last resort: try offline page
+    // For home page or any other page, always show offline page when network fails
+    const cacheNames = await caches.keys();
     for (const cacheName of cacheNames) {
       const cache = await caches.open(cacheName);
       const offlineResponse = await cache.match('/offline');
       if (offlineResponse) {
+        console.log('[SW] Serving offline page');
         return offlineResponse;
-      }
-      
-      // Fallback to index.html if offline page not cached
-      const indexResponse = await cache.match('/');
-      if (indexResponse) {
-        return indexResponse;
       }
     }
     
