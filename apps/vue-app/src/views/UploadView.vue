@@ -318,6 +318,7 @@
 
           <!-- Scan Toggle -->
           <ScanToggle v-model="enableScan" />
+        </div>
 
         <!-- Upload Progress with Animation -->
         <div v-if="isUploading" class="space-y-5 bg-white rounded-xl p-8 border border-purple-100">
