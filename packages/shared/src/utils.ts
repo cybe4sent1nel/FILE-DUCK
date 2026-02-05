@@ -18,11 +18,11 @@ export function validateShareCode(code: string): boolean {
 // Browser-only function - used in Vue app
 export function computeSHA256(file: any): Promise<string> {
   return new Promise((resolve, reject) => {
-    if (typeof window === 'undefined') {
+    if (typeof globalThis.window === 'undefined') {
       reject(new Error('computeSHA256 can only be used in browser environment'));
       return;
     }
-    const reader = new (window as any).FileReader();
+    const reader = new (globalThis as any).FileReader();
     reader.onload = async (e: any) => {
       try {
         const buffer = e.target?.result as ArrayBuffer;
