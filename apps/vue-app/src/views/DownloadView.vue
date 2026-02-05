@@ -100,16 +100,16 @@
                 ⚠️ SECURITY NOTICE: FILE NOT SCANNED
               </p>
               <p class="text-base text-yellow-800 mb-3 bg-white/50 p-3 rounded">
-                This file was <strong>not scanned for viruses</strong> before upload because it exceeds the 32MB scanning limit.
+                This file was <strong>not scanned for viruses or malware</strong> before upload.
               </p>
               <ul class="text-sm text-yellow-700 space-y-2 mb-4 bg-white/30 p-3 rounded">
-                <li class="flex items-start"><span class="mr-2">•</span>The sender chose to skip virus scanning for this large file</li>
-                <li class="flex items-start"><span class="mr-2">•</span>Download at your own risk and verify file integrity</li>
+                <li class="flex items-start"><span class="mr-2">•</span>File was either too large for scanning (>100MB) or sender chose to skip security scanning</li>
+                <li class="flex items-start"><span class="mr-2">•</span><strong class="text-red-700">DOWNLOAD AT YOUR OWN RESPONSIBILITY</strong> - File may contain harmful content</li>
                 <li class="flex items-start"><span class="mr-2">•</span><strong>Strongly recommended:</strong> Scan with your own antivirus before opening</li>
                 <li class="flex items-start"><span class="mr-2">•</span>Verify the SHA-256 checksum below to ensure file integrity</li>
               </ul>
               <p class="text-sm font-bold text-yellow-900">
-                💡 FileDuck is not responsible for any damage caused by downloading unscanned files. Proceed with caution.
+                💡 FileDuck is not responsible for any damage caused by downloading unscanned files. Proceed with extreme caution.
               </p>
             </div>
           </div>
@@ -151,7 +151,7 @@
             :animationData="DataDownloadingAnimation"
             :height="220"
             :width="220"
-            :loop="false"
+            :loop="true"
           />
           <h2 class="text-3xl font-bold mb-2" :class="fileInfo.isQuarantined ? 'text-red-600' : 'text-green-600'">
             {{ fileInfo.isQuarantined ? 'Quarantined File Access' : 'File Ready for Download' }}
@@ -370,34 +370,16 @@ const initiateDownload = async () => {
 
   try {
     downloadProgress.value = 0;
-    success('📥 Download started! Please wait...');
-    const response = await fetch(downloadUrl.value);
-    const reader = response.body?.getReader();
-    const contentLength = +(response.headers.get('Content-Length') || fileInfo.value.size);
-
-    let receivedLength = 0;
-    const chunks = [];
-
-    if (reader) {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        chunks.push(value);
-        receivedLength += value.length;
-        downloadProgress.value = Math.round((receivedLength / contentLength) * 100);
-      }
-    }
-
-    const blob = new Blob(chunks);
-    const url = window.URL.createObjectURL(blob);
+    success('📥 Download started! Check your downloads folder...');
+    
+    // Use direct link download instead of fetch to avoid CORS issues
     const a = document.createElement('a');
-    a.href = url;
+    a.href = downloadUrl.value;
     a.download = fileInfo.value.filename;
+    a.target = '_blank';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
 
     downloadProgress.value = 100;
     

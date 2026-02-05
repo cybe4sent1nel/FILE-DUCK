@@ -360,10 +360,10 @@
       <div v-else class="space-y-6">
         <div class="text-center py-8">
           <Vue3Lottie
-            :animationData="GooseWondersAnimation"
+            :animationData="UploadSuccessAnimation"
             :height="180"
             :width="180"
-            :loop="false"
+            :loop="true"
           />
           <h2 class="text-3xl font-bold text-gray-800 mb-2 mt-4">
             File Uploaded Successfully!
@@ -561,7 +561,7 @@ const { success, error } = useNotifications();
 // Import animations
 import FileStorageAnimation from '../../../../animations/File storage.json';
 import UploadFilesAnimation from '../../../../animations/Upload Files.json';
-import GooseWondersAnimation from '../../../../animations/goose Wonders.json';
+import UploadSuccessAnimation from '../../../../animations/upload success.json';
 import ScanningDocumentAnimation from '../../../../animations/Scanning document.json';
 import COVID19Animation from '../../../../animations/COVID19.json';
 import DesignerCatAnimation from '../../../../animations/Designer cat.json';
