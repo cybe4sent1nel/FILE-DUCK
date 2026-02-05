@@ -23,20 +23,20 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' })); // Increase limit for base64 file data
 
-// Lazy load Vercel handlers
-const getHealthHandler = () => require('./api/health').default;
-const getUploadMetaHandler = () => require('./api/upload-meta').default;
-const getCompleteUploadHandler = () => require('./api/complete-upload').default;
-const getRedeemHandler = () => require('./api/redeem').default;
-const getGitHubUploadHandler = () => require('./api/github-upload').default;
-const getScanHandler = () => require('./api/scan').default;
-const getDeleteFileHandler = () => require('./api/delete-file').default;
-const getCleanupExpiredHandler = () => require('./api/cleanup-expired').default;
+// Lazy load Vercel handlers with dynamic imports for ESM
+const getHealthHandler = async () => (await import('./api/health.js')).default;
+const getUploadMetaHandler = async () => (await import('./api/upload-meta.js')).default;
+const getCompleteUploadHandler = async () => (await import('./api/complete-upload.js')).default;
+const getRedeemHandler = async () => (await import('./api/redeem.js')).default;
+const getGitHubUploadHandler = async () => (await import('./api/github-upload.js')).default;
+const getScanHandler = async () => (await import('./api/scan.js')).default;
+const getDeleteFileHandler = async () => (await import('./api/delete-file.js')).default;
+const getCleanupExpiredHandler = async () => (await import('./api/cleanup-expired.js')).default;
 
 // Routes - compatible with both Express and Vercel
 app.get('/api/health', async (req: Request, res: Response) => {
   try {
-    await getHealthHandler()(req as any, res as any);
+    await (await getHealthHandler())(req as any, res as any);
   } catch (error: any) {
     if (!res.headersSent) {
       res.status(500).json({ error: error.message });
@@ -46,7 +46,7 @@ app.get('/api/health', async (req: Request, res: Response) => {
 
 app.post('/api/upload-meta', async (req: Request, res: Response) => {
   try {
-    await getUploadMetaHandler()(req as any, res as any);
+    await (await getUploadMetaHandler())(req as any, res as any);
   } catch (error: any) {
     if (!res.headersSent) {
       res.status(500).json({ error: error.message });
@@ -56,7 +56,7 @@ app.post('/api/upload-meta', async (req: Request, res: Response) => {
 
 app.post('/api/complete-upload', async (req: Request, res: Response) => {
   try {
-    await getCompleteUploadHandler()(req as any, res as any);
+    await (await getCompleteUploadHandler())(req as any, res as any);
   } catch (error: any) {
     if (!res.headersSent) {
       res.status(500).json({ error: error.message });
@@ -66,7 +66,7 @@ app.post('/api/complete-upload', async (req: Request, res: Response) => {
 
 app.post('/api/redeem', async (req: Request, res: Response) => {
   try {
-    await getRedeemHandler()(req as any, res as any);
+    await (await getRedeemHandler())(req as any, res as any);
   } catch (error: any) {
     if (!res.headersSent) {
       res.status(500).json({ error: error.message });
@@ -76,7 +76,7 @@ app.post('/api/redeem', async (req: Request, res: Response) => {
 
 app.post('/api/github-upload', async (req: Request, res: Response) => {
   try {
-    await getGitHubUploadHandler()(req as any, res as any);
+    await (await getGitHubUploadHandler())(req as any, res as any);
   } catch (error: any) {
     if (!res.headersSent) {
       res.status(500).json({ error: error.message });
@@ -86,7 +86,7 @@ app.post('/api/github-upload', async (req: Request, res: Response) => {
 
 app.post('/api/scan', async (req: Request, res: Response) => {
   try {
-    await getScanHandler()(req as any, res as any);
+    await (await getScanHandler())(req as any, res as any);
   } catch (error: any) {
     if (!res.headersSent) {
       res.status(500).json({ error: error.message });
@@ -96,7 +96,7 @@ app.post('/api/scan', async (req: Request, res: Response) => {
 
 app.delete('/api/delete-file', async (req: Request, res: Response) => {
   try {
-    await getDeleteFileHandler()(req as any, res as any);
+    await (await getDeleteFileHandler())(req as any, res as any);
   } catch (error: any) {
     if (!res.headersSent) {
       res.status(500).json({ error: error.message });
@@ -106,7 +106,7 @@ app.delete('/api/delete-file', async (req: Request, res: Response) => {
 
 app.post('/api/cleanup-expired', async (req: Request, res: Response) => {
   try {
-    await getCleanupExpiredHandler()(req as any, res as any);
+    await (await getCleanupExpiredHandler())(req as any, res as any);
   } catch (error: any) {
     if (!res.headersSent) {
       res.status(500).json({ error: error.message });
