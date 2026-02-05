@@ -21,7 +21,10 @@
         </div>
 
         <!-- Witty Message -->
-        <h2 class="text-3xl font-semibold text-gray-700 mb-4">{{ wittyMessage }}</h2>
+        <div class="flex items-center justify-center gap-3 mb-4">
+          <img src="/logo.png" alt="FileDuck" class="w-10 h-10" />
+          <h2 class="text-3xl font-semibold text-gray-700">{{ wittyMessage }}</h2>
+        </div>
         
         <p class="text-lg text-gray-600 mb-8">
           {{ errorDescription || 'Something unexpected happened. Our ducks are working on it!' }}
@@ -141,16 +144,16 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Witty duck messages
 const duckMessages = [
-  "Quack! Something went wrong! 🦆",
-  "Our ducks tripped over the code! 🦆",
-  "Error: Duck overflow detected! 🦆",
-  "The server ducks are on a coffee break! 🦆",
-  "Oops! A wild bug appeared! 🦆",
-  "Houston, we have a duck problem! 🦆",
-  "Error 🦆: Too many ducks in the system!",
-  "The code went duck-shaped! 🦆",
-  "Something's fishy... or should we say, ducky! 🦆",
-  "Our debugging duck needs debugging! 🦆"
+  "Quack! Something went wrong!",
+  "Our ducks tripped over the code!",
+  "Error: Duck overflow detected!",
+  "The server ducks are on a coffee break!",
+  "Oops! A wild bug appeared!",
+  "Houston, we have a duck problem!",
+  "Error: Too many ducks in the system!",
+  "The code went duck-shaped!",
+  "Something's fishy... or should we say, ducky!",
+  "Our debugging duck needs debugging!"
 ];
 
 const wittyMessage = ref(duckMessages[Math.floor(Math.random() * duckMessages.length)]);

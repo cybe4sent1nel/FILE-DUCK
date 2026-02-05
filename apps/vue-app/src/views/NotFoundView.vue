@@ -21,7 +21,10 @@
         </div>
 
         <!-- Witty Message -->
-        <h2 class="text-3xl font-semibold text-gray-700 mb-4">{{ wittyMessage }}</h2>
+        <div class="flex items-center justify-center gap-3 mb-4">
+          <img src="/logo.png" alt="FileDuck" class="w-10 h-10" />
+          <h2 class="text-3xl font-semibold text-gray-700">{{ wittyMessage }}</h2>
+        </div>
         
         <p class="text-lg text-gray-600 mb-8">
           The page you're looking for doesn't exist, has been moved, or is hiding from the authorities.
@@ -133,16 +136,16 @@ const router = useRouter();
 
 // Witty duck messages
 const duckMessages = [
-  "Quack! This page went on vacation! 🦆",
-  "404: Duck not found in this pond! 🦆",
-  "Even our GPS duck got lost here! 🦆",
-  "This page flew the coop! 🦆",
-  "Waddle you do? Page not found! 🦆",
-  "Our duck checked everywhere... nothing! 🦆",
-  "Page missing: Reward - one bread crumb! 🦆",
-  "Duck, duck... no page! 🦆",
-  "This URL is for the birds! 🦆",
-  "Page went quackers and disappeared! 🦆"
+  "Quack! This page went on vacation!",
+  "404: Duck not found in this pond!",
+  "Even our GPS duck got lost here!",
+  "This page flew the coop!",
+  "Waddle you do? Page not found!",
+  "Our duck checked everywhere... nothing!",
+  "Page missing: Reward - one bread crumb!",
+  "Duck, duck... no page!",
+  "This URL is for the birds!",
+  "Page went quackers and disappeared!"
 ];
 
 const wittyMessage = ref(duckMessages[Math.floor(Math.random() * duckMessages.length)]);

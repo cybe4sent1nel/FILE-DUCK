@@ -21,7 +21,10 @@
         </div>
 
         <!-- Witty Message -->
-        <h2 class="text-3xl font-semibold text-gray-700 mb-4">{{ wittyMessage }}</h2>
+        <div class="flex items-center justify-center gap-3 mb-4">
+          <img src="/logo.png" alt="FileDuck" class="w-10 h-10" />
+          <h2 class="text-3xl font-semibold text-gray-700">{{ wittyMessage }}</h2>
+        </div>
         
         <p class="text-lg text-gray-600 mb-8">
           It seems you've lost your internet connection. Your files are safe, but you'll need to reconnect to continue.
@@ -142,16 +145,16 @@ const isOnline = ref(navigator.onLine);
 
 // Witty duck messages
 const duckMessages = [
-  "Quack! The internet flew away! 🦆",
-  "Even ducks need WiFi to fly! 🦆",
-  "Houston, we've lost connection! 🦆",
-  "The internet took a duck break! 🦆",
-  "No signal? Must be duck season! 🦆",
-  "Looks like the WiFi went south for winter! 🦆",
-  "Connection paddled away! 🦆",
-  "The web is playing hide and seek! 🦆",
-  "Internet? More like... outer-net! 🦆",
-  "Even our rubber ducky can't debug this! 🦆"
+  "Quack! The internet flew away!",
+  "Even ducks need WiFi to fly!",
+  "Houston, we've lost connection!",
+  "The internet took a duck break!",
+  "No signal? Must be duck season!",
+  "Looks like the WiFi went south for winter!",
+  "Connection paddled away!",
+  "The web is playing hide and seek!",
+  "Internet? More like... outer-net!",
+  "Even our rubber ducky can't debug this!"
 ];
 
 const wittyMessage = ref(duckMessages[Math.floor(Math.random() * duckMessages.length)]);
