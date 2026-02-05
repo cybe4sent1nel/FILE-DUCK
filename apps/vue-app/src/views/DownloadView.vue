@@ -384,11 +384,13 @@ const redeemCode = async () => {
       captchaRequired.value = true;
       errorMessage.value = 'CAPTCHA verification required';
     } else if (err.response?.data?.code === 'CAPTCHA_INVALID') {
-      errorMessage.value = 'CAPTCHA verification failed or expired. Please complete it again.';
       captchaToken.value = '';
-      // Force widget reload
+      // Force widget reload without showing error during transition
       captchaRequired.value = false;
-      setTimeout(() => { captchaRequired.value = true; }, 100);
+      setTimeout(() => { 
+        captchaRequired.value = true;
+        errorMessage.value = 'CAPTCHA verification failed or expired. Please complete it again.';
+      }, 100);
     } else if (err.response?.data?.code === 'SCAN_PENDING') {
       errorMessage.value = 'File is being scanned for malware. Please try again in a moment.';
     } else if (err.response?.data?.code === 'MALWARE_DETECTED') {
@@ -404,9 +406,10 @@ const redeemCode = async () => {
 const handleCaptchaVerified = (token: string) => {
   console.log('✅ Captcha verified, token length:', token?.length);
   captchaToken.value = token;
-  errorMessage.value = '';
+  errorMessage.value = ''; // Clear any error messages immediately
+  captchaRequired.value = false; // Hide captcha widget to prevent duplicate badges
   // Auto-submit after captcha verification
-  redeemCode();
+  setTimeout(() => redeemCode(), 100);
 };
 
 const handleCaptchaError = (error: string) => {
