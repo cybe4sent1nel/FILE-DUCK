@@ -48,11 +48,20 @@ const updateSW = registerSW({
 
 // Handle offline navigation
 window.addEventListener('offline', () => {
-  router.push('/offline');
+  console.log('Browser is offline');
+  if (router.currentRoute.value.path !== '/offline') {
+    router.push('/offline');
+  }
 });
 
 window.addEventListener('online', () => {
+  console.log('Browser is online');
   if (router.currentRoute.value.path === '/offline') {
     router.push('/');
   }
 });
+
+// Check online status on app load
+if (!navigator.onLine && router.currentRoute.value.path !== '/offline') {
+  router.push('/offline');
+}

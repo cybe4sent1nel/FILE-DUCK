@@ -1,8 +1,8 @@
-# 🦆 FileDuck - Secure Global File Sharing
-
 <div align="center">
 
-![FileDuck Logo](./logo.png)
+<img src="./logo.png" alt="FileDuck Logo" width="120" />
+
+# FileDuck - Secure Global File Sharing
 
 **Fast, private, and secure file sharing with global CDN, malware scanning, and zero-knowledge encryption.**
 
@@ -514,7 +514,7 @@ MIT License - see [LICENSE](LICENSE)
 
 <div align="center">
 
-**Made with 🦆 and 💜 by the FileDuck Team**
+**Made with <img src="./logo.png" alt="FileDuck" width="20" style="vertical-align: middle;" /> and 💜 by the FileDuck Team**
 
 [Website](https://fileduck.vercel.app) • [GitHub](https://github.com/cybe4sent1nel/FILE-DUCK) • [Documentation](./ARCHITECTURE.md) • [Report Bug](https://github.com/cybe4sent1nel/FILE-DUCK/issues)
 
