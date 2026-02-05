@@ -20,15 +20,20 @@ precacheAndRoute(self.__WB_MANIFEST);
 
 // Install event - cache critical pages immediately (NOT home page)
 self.addEventListener('install', (event: ExtendableEvent) => {
+  console.log('[SW] Installing and caching offline page');
   event.waitUntil(
-    caches.open('pages-cache').then(cache => {
-      console.log('[SW] Pre-caching critical pages');
-      return cache.addAll([
-        '/offline',
-        '/error'
-      ]).catch(err => {
-        console.warn('[SW] Pre-cache failed for some URLs:', err);
-      });
+    caches.open('offline-cache').then(async (cache) => {
+      try {
+        // Fetch the offline page and cache it
+        const offlineRequest = new Request('/offline', { mode: 'no-cors' });
+        const offlineResponse = await fetch(offlineRequest);
+        if (offlineResponse.ok || offlineResponse.type === 'opaque') {
+          await cache.put('/offline', offlineResponse);
+          console.log('[SW] Offline page cached successfully');
+        }
+      } catch (err) {
+        console.warn('[SW] Failed to cache offline page:', err);
+      }
     })
   );
 });
@@ -120,13 +125,25 @@ const navigationHandler = async (options: any) => {
     }
     
     // For home page or any other page, always show offline page when network fails
+    console.log('[SW] Looking for offline page in caches...');
+    
+    // First try the dedicated offline cache
+    const offlineCache = await caches.open('offline-cache');
+    const offlineResponse = await offlineCache.match('/offline');
+    if (offlineResponse) {
+      console.log('[SW] Serving offline page from offline-cache');
+      return offlineResponse;
+    }
+    
+    // Then try all caches
     const cacheNames = await caches.keys();
+    console.log('[SW] Available caches:', cacheNames);
     for (const cacheName of cacheNames) {
       const cache = await caches.open(cacheName);
-      const offlineResponse = await cache.match('/offline');
-      if (offlineResponse) {
-        console.log('[SW] Serving offline page');
-        return offlineResponse;
+      const cachedOffline = await cache.match('/offline');
+      if (cachedOffline) {
+        console.log('[SW] Serving offline page from', cacheName);
+        return cachedOffline;
       }
     }
     
