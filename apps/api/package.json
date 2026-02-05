@@ -16,10 +16,13 @@
     "@aws-sdk/s3-request-presigner": "^3.981.0",
     "@fileduck/shared": "workspace:*",
     "@octokit/rest": "^22.0.1",
+    "@types/formidable": "^3.4.6",
     "@upstash/redis": "^1.36.2",
     "axios": "^1.13.4",
     "dotenv": "^16.6.1",
-    "express": "^4.22.1"
+    "express": "^4.22.1",
+    "form-data": "^4.0.5",
+    "formidable": "^3.5.4"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

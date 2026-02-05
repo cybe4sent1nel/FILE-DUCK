@@ -75,15 +75,15 @@ export async function scanFileBeforeUpload(
   formData.append('file', file);
   formData.append('sha256', sha256);
 
-  // Scanner service runs on port 4000
-  const scannerUrl = import.meta.env.VITE_SCANNER_URL || 'http://localhost:4000';
+  // Use local API scan endpoint
+  const scanUrl = `${API_BASE_URL}/scan`;
   
   try {
-    const response = await axios.post(`${scannerUrl}/scan`, formData, {
+    const response = await axios.post(scanUrl, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
-      timeout: 30000, // 30 second timeout for large files
+      timeout: 60000, // 60 second timeout for scanning
     });
     return response.data;
   } catch (error: any) {

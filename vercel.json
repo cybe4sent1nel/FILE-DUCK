@@ -15,6 +15,11 @@
   ],
   "routes": [
     {
+      "src": "/api/scan",
+      "dest": "/apps/api/api/scan.ts",
+      "methods": ["POST", "OPTIONS"]
+    },
+    {
       "src": "/api/upload-meta",
       "dest": "/apps/api/api/upload-meta.ts",
       "methods": ["POST", "OPTIONS"]
