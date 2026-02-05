@@ -63,20 +63,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Smart Hybrid CAPTCHA Logic (skip in development)
     if (IS_PRODUCTION) {
-      const failedAttempts = await trackFailedAttempt(ip);
+      // Get failed attempts count WITHOUT incrementing yet
+      const redisClient = await import('../lib/redis.js').then(m => m.redisClient);
+      const redis = await redisClient();
+      const failedKey = `failed:${ip}`;
+      const failedCount = parseInt((await redis.get(failedKey)) || '0', 10);
       
       // Risk-based triggers for CAPTCHA requirement
       const captchaRequired = 
         metadata.requireCaptcha || // Uploader opted-in for captcha protection
-        failedAttempts >= CAPTCHA_THRESHOLD || // Multiple failed attempts (brute force)
+        failedCount >= CAPTCHA_THRESHOLD || // Multiple failed attempts (brute force)
         metadata.size > 50 * 1024 * 1024; // Large files (>50MB)
       
       if (captchaRequired && !captchaToken) {
+        // Don't increment failed attempts when just requesting captcha
         return res.status(403).json({
           error: 'CAPTCHA verification required',
           code: 'CAPTCHA_REQUIRED',
           reason: metadata.requireCaptcha ? 'uploader_required' : 
-                  failedAttempts >= CAPTCHA_THRESHOLD ? 'failed_attempts' : 
+                  failedCount >= CAPTCHA_THRESHOLD ? 'failed_attempts' : 
                   'large_file',
         });
       }
@@ -85,6 +90,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (captchaToken) {
         const isValid = await verifyCaptcha(captchaToken);
         if (!isValid) {
+          await trackFailedAttempt(ip); // Only increment on invalid captcha
           return res.status(403).json({ 
             error: 'Invalid CAPTCHA', 
             code: 'CAPTCHA_INVALID' 
