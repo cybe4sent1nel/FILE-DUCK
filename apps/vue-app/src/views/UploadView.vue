@@ -267,12 +267,12 @@
               <ClockIcon class="w-5 h-5 mr-2 text-purple-400" />
               Time to Live
             </label>
-            <select v-model="ttlHours" class="input-field text-base w-full p-3 border border-gray-200 rounded-lg focus:border-purple-300 focus:ring-2 focus:ring-purple-100">
-              <option :value="1">1 hour</option>
-              <option :value="6">6 hours</option>
-              <option :value="24">24 hours (default)</option>
-              <option :value="72">3 days</option>
-              <option :value="168">7 days</option>
+            <select v-model="ttlHours" class="input-field text-base w-full p-3 border border-gray-200 rounded-lg focus:border-purple-300 focus:ring-2 focus:ring-purple-100 bg-white font-sans font-medium text-gray-800 cursor-pointer hover:border-purple-400 transition-colors">
+              <option :value="1" class="font-sans font-medium text-gray-800 py-2">1 hour</option>
+              <option :value="6" class="font-sans font-medium text-gray-800 py-2">6 hours</option>
+              <option :value="24" class="font-sans font-medium text-gray-800 py-2">24 hours (default)</option>
+              <option :value="72" class="font-sans font-medium text-gray-800 py-2">3 days</option>
+              <option :value="168" class="font-sans font-medium text-gray-800 py-2">7 days</option>
             </select>
           </div>
 
@@ -281,12 +281,12 @@
               <DownloadIcon class="w-5 h-5 mr-2 text-lemon-500" />
               Maximum Downloads
             </label>
-            <select v-model="maxUses" class="input-field text-base w-full p-3 border border-gray-200 rounded-lg focus:border-purple-300 focus:ring-2 focus:ring-purple-100">
-              <option :value="1">One-time (default)</option>
-              <option :value="3">3 downloads</option>
-              <option :value="5">5 downloads</option>
-              <option :value="10">10 downloads</option>
-              <option :value="999">Unlimited</option>
+            <select v-model="maxUses" class="input-field text-base w-full p-3 border border-gray-200 rounded-lg focus:border-purple-300 focus:ring-2 focus:ring-purple-100 bg-white font-sans font-medium text-gray-800 cursor-pointer hover:border-purple-400 transition-colors">
+              <option :value="1" class="font-sans font-medium text-gray-800 py-2">One-time (default)</option>
+              <option :value="3" class="font-sans font-medium text-gray-800 py-2">3 downloads</option>
+              <option :value="5" class="font-sans font-medium text-gray-800 py-2">5 downloads</option>
+              <option :value="10" class="font-sans font-medium text-gray-800 py-2">10 downloads</option>
+              <option :value="999" class="font-sans font-medium text-gray-800 py-2">Unlimited</option>
             </select>
           </div>
 
@@ -1296,5 +1296,36 @@ const formatExpiry = formatTimeRemaining;
   background: linear-gradient(90deg, #a855f7, #ec4899, #f97316);
   border-radius: 9999px;
   transition: width 0.3s ease;
+}
+
+/* Enhanced Select Dropdown Styling */
+select.input-field {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a855f7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.25rem;
+  padding-right: 2.5rem;
+}
+
+select.input-field option {
+  padding: 0.75rem 1rem;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #1f2937;
+  background-color: #ffffff;
+  line-height: 1.5;
+}
+
+select.input-field option:hover {
+  background-color: #f3e8ff;
+  color: #7c3aed;
+}
+
+select.input-field option:checked {
+  background-color: #e9d5ff;
+  color: #7c3aed;
+  font-weight: 600;
 }
 </style>

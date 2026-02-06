@@ -67,10 +67,16 @@ const router = createRouter({
 
 // Redirect to offline page when user is offline
 router.beforeEach((to, from, next) => {
-  // Allow offline page and history page when offline
-  if (!navigator.onLine && to.path !== '/offline' && to.path !== '/history') {
+  // If offline and not already on /offline, redirect to /offline
+  if (!navigator.onLine && to.path !== '/offline') {
     return next('/offline');
   }
+  
+  // If online and on /offline, redirect to home
+  if (navigator.onLine && to.path === '/offline') {
+    return next('/');
+  }
+  
   next();
 });
 

@@ -69,11 +69,23 @@ registerRoute(
 // The router itself enforces offline redirects.
 const handler = createHandlerBoundToURL('/index.html');
 const navigationRoute = new NavigationRoute(handler, {
-  allowlist: [], // Allow all
   denylist: [/^\/api/], // Don't handle API routes
 });
 
 registerRoute(navigationRoute);
+
+// Ensure offline page works by using cache-first for navigation
+registerRoute(
+  ({ request }) => request.mode === 'navigate',
+  new CacheFirst({
+    cacheName: 'pages-cache',
+    plugins: [
+      new CacheableResponsePlugin({
+        statuses: [0, 200],
+      }),
+    ],
+  })
+);
 
 // Listen for messages from the client
 self.addEventListener('message', (event) => {
