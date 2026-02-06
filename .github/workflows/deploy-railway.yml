@@ -20,12 +20,12 @@ jobs:
         run: railway up --service scanner
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_PROJECT_ID: 45908887-0d5b-42a3-be66-43d72c236a80
+          RAILWAY_PROJECT_ID: 6a01c48f-42ba-44ba-9d99-14ff7963dc4a
           RAILWAY_ENVIRONMENT: production
 
       - name: Deploy API Service  
         run: railway up --service api
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_PROJECT_ID: 45908887-0d5b-42a3-be66-43d72c236a80
+          RAILWAY_PROJECT_ID: 6a01c48f-42ba-44ba-9d99-14ff7963dc4a
           RAILWAY_ENVIRONMENT: production
