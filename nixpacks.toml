@@ -8,4 +8,4 @@ cmds = ["pnpm install --frozen-lockfile"]
 cmds = ["pnpm run build:backend"]
 
 [start]
-cmd = "pnpm start"
+cmd = "pnpm --filter @fileduck/api start"
