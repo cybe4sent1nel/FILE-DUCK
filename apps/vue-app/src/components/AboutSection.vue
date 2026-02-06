@@ -14,12 +14,12 @@
 
         <!-- Right: Content -->
         <div>
-          <h2 class="text-5xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-lemon-400 bg-clip-text text-transparent pb-2">
+          <h2 class="text-5xl font-bold font-display tracking-tight mb-6 text-purple-950 pb-2">
             About FileDuck
           </h2>
           <p class="text-xl text-gray-700 mb-6 leading-relaxed">
-            We're on a mission to make file sharing <strong class="text-purple-400">secure</strong>, 
-            <strong class="text-gray-800">fast</strong>, and <strong class="text-purple-400">private</strong> for everyone.
+            We're on a mission to make file sharing <strong class="text-purple-600">secure</strong>, 
+            <strong class="text-gray-900">fast</strong>, and <strong class="text-purple-600">private</strong> for everyone.
           </p>
           <p class="text-lg text-gray-600 mb-8 leading-relaxed">
             FileDuck combines enterprise-grade security with consumer simplicity. Every file is automatically scanned 

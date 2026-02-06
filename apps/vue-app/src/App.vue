@@ -13,15 +13,15 @@
     <!-- Particle Background -->
     <ParticleBackground />
     
-    <nav class="bg-white/95 backdrop-blur-md shadow-2xl border-b-2 border-purple-200 sticky top-0 z-50 relative">
+    <nav class="bg-white/95 backdrop-blur-md shadow-2xl border-b-2 border-purple-200 sticky top-0 z-50">
       <div class="container mx-auto px-4 py-3">
         <div class="flex items-center justify-between">
           <router-link to="/" class="flex items-center space-x-2 sm:space-x-3 group">
             <div class="relative">
-              <div class="absolute inset-0 bg-gradient-to-r from-purple-400 to-yellow-400 rounded-full blur-lg opacity-50 group-hover:opacity-75 transition-opacity"></div>
+              <div class="absolute inset-0 bg-purple-100 rounded-full blur-lg opacity-50 group-hover:opacity-75 transition-opacity"></div>
               <img src="/logo.png" alt="FileDuck" class="h-10 w-10 sm:h-12 sm:w-12 transform group-hover:scale-110 group-hover:rotate-12 transition-all relative z-10" />
             </div>
-            <span class="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-600 to-yellow-500 bg-clip-text text-transparent">FileDuck</span>
+            <span class="text-xl sm:text-2xl font-bold font-display tracking-tight text-violet-900">FileDuck</span>
           </router-link>
           
           <!-- Mobile Menu Button -->
@@ -143,6 +143,12 @@
             <router-link to="/terms" class="hover:text-lime-600 transition-colors font-medium">Terms of Service</router-link>
           </div>
           <p class="text-gray-500">&copy; 2026 FileDuck. All rights reserved.</p>
+          <div class="mt-4 pb-2">
+             <span class="text-xs font-medium text-gray-500/80">Designed & Developed by </span>
+             <span class="inline-block font-bold bg-gradient-to-r from-violet-600 via-fuchsia-500 to-amber-500 bg-[length:200%_auto] animate-gradient bg-clip-text text-transparent transform hover:scale-105 transition-all duration-300 cursor-default shadow-lg shadow-purple-500/10">
+               Fahad Khan
+             </span>
+          </div>
         </div>
       </div>
     </footer>

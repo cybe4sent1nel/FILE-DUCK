@@ -83,17 +83,17 @@ const updateSW = registerSW({
   },
 });
 
-// Handle offline navigation (force hard navigation to avoid cached home shell)
+// Handle offline navigation (use router for smooth transition, hard redirect if needed)
 window.addEventListener('offline', () => {
   console.log('Browser is offline');
-  if (window.location.pathname !== '/offline') {
-    window.location.replace('/offline');
+  if (router.currentRoute.value.path !== '/offline' && router.currentRoute.value.path !== '/history') {
+    router.push('/offline');
   }
 });
 
 window.addEventListener('online', () => {
   console.log('Browser is online');
-  if (window.location.pathname === '/offline') {
+  if (router.currentRoute.value.path === '/offline') {
     router.replace('/');
   }
 });

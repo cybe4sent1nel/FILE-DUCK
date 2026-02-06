@@ -15,7 +15,7 @@
       
       <div class="flex flex-col md:flex-row items-center justify-center gap-4 sm:gap-6 mb-4 px-2">
         <img src="/logo.png" alt="FileDuck Logo" class="h-24 sm:h-32 md:h-40 w-24 sm:w-32 md:w-40 object-contain" />
-        <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold bg-gradient-to-r from-purple-400 via-purple-300 to-lemon-400 bg-clip-text text-transparent leading-tight text-center md:text-left pb-2">
+        <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold font-display tracking-tight text-indigo-950 leading-tight text-center md:text-left pb-2">
           Share Files Securely
         </h1>
       </div>

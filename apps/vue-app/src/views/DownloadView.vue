@@ -3,7 +3,7 @@
     <div class="bg-white/80 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 border-2 border-yellow-100">
       <div class="flex flex-col sm:flex-row items-center justify-center mb-6 sm:mb-8 gap-3 sm:gap-0">
         <img src="/logo.png" alt="FileDuck" class="h-12 sm:h-16 w-12 sm:w-16 sm:mr-4 transform hover:rotate-12 transition-transform" />
-        <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-center bg-gradient-to-r from-yellow-600 to-purple-500 bg-clip-text text-transparent pb-1">
+        <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold font-display tracking-tight text-center text-fuchsia-900 pb-1">
           Download File
         </h1>
       </div>
@@ -22,7 +22,7 @@
 
         <!-- Share Code Input -->
         <div class="bg-gradient-to-r from-purple-50 to-yellow-50 rounded-xl p-4 sm:p-6 border-2 border-purple-200">
-          <label class="block text-sm sm:text-base font-bold text-purple-700 mb-3 flex items-center justify-center sm:justify-start">
+          <label class="text-sm sm:text-base font-bold text-purple-700 mb-3 flex items-center justify-center sm:justify-start">
             <KeyIcon class="w-5 h-5 mr-2" />
             Enter Share Code
           </label>
