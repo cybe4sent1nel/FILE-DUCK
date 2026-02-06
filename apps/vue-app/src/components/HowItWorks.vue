@@ -51,7 +51,7 @@
             Security Scan
           </h3>
           <p class="text-gray-600 leading-relaxed">
-            Every file is automatically scanned for malware using ClamAV and VirusTotal. Malicious files are quarantined.
+            Every file is automatically scanned for malware using multiple security engines. Malicious files are quarantined.
           </p>
           <div class="mt-4 flex items-center text-sm text-gray-700">
             <ScanIcon class="w-4 h-4 mr-1" />

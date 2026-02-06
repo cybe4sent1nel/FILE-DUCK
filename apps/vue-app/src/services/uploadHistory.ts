@@ -22,19 +22,7 @@ const STORAGE_KEY = 'fileduck_upload_history';
 const MAX_HISTORY_ITEMS = 50; // Keep last 50 uploads
 const MAX_TTL_DAYS = 7; // Maximum 7 days
 
-// Register service worker for persistent storage
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(
-      (registration) => {
-        console.log('Service Worker registered:', registration.scope);
-      },
-      (error) => {
-        console.log('Service Worker registration failed:', error);
-      }
-    );
-  });
-}
+// Service worker registration is handled in main.ts
 
 /**
  * Get all upload history from localStorage

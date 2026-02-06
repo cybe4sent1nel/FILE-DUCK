@@ -105,7 +105,7 @@
                 This file was <strong>not scanned for viruses or malware</strong> before upload.
               </p>
               <ul class="text-sm text-yellow-700 space-y-2 mb-4 bg-white/30 p-3 rounded">
-                <li class="flex items-start"><span class="mr-2">•</span>File was either too large for scanning (>100MB) or sender chose to skip security scanning</li>
+                <li class="flex items-start"><span class="mr-2">•</span>File was not scanned because scanning was skipped for large files or by the sender</li>
                 <li class="flex items-start"><span class="mr-2">•</span><strong class="text-red-700">DOWNLOAD AT YOUR OWN RESPONSIBILITY</strong> - File may contain harmful content</li>
                 <li class="flex items-start"><span class="mr-2">•</span><strong>Strongly recommended:</strong> Scan with your own antivirus before opening</li>
                 <li class="flex items-start"><span class="mr-2">•</span>Verify the SHA-256 checksum below to ensure file integrity</li>
@@ -113,6 +113,19 @@
               <p class="text-sm font-bold text-yellow-900">
                 💡 FileDuck is not responsible for any damage caused by downloading unscanned files. Proceed with extreme caution.
               </p>
+
+              <div class="mt-4">
+                <button
+                  @click="runPreDownloadScan"
+                  :disabled="isPreDownloadScanning"
+                  class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {{ isPreDownloadScanning ? 'Scanning...' : 'Run security scan before download' }}
+                </button>
+                <p v-if="preDownloadScanMessage" class="mt-3 text-sm" :class="preDownloadScanStatus === 'clean' ? 'text-green-700' : preDownloadScanStatus === 'infected' ? 'text-red-700' : 'text-yellow-700'">
+                  {{ preDownloadScanMessage }}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -223,8 +236,14 @@
             </span>
             <span class="font-bold text-xl">{{ downloadProgress }}%</span>
           </div>
-          <div class="progress-bar h-4">
-            <div class="progress-fill h-4" :style="{ width: downloadProgress + '%' }"></div>
+          <div class="w-full h-8 rounded-full prism-track relative overflow-hidden">
+            <div
+              class="h-full prism-fill rounded-full relative transition-all duration-200 ease-out"
+              :style="{ width: downloadProgress + '%' }"
+            >
+              <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(white 1px, transparent 1px); background-size: 10px 10px;"></div>
+            </div>
+            <div class="absolute inset-0 prism-glass-overlay rounded-full"></div>
           </div>
         </div>
 
@@ -239,6 +258,34 @@
             />
             <p class="text-xl font-bold text-green-800 mt-4">✅ Download Complete!</p>
             <p class="text-sm text-green-600 mt-2">Check your downloads folder</p>
+          </div>
+        </div>
+
+        <!-- Optional Safety Scan (if upload was not scanned) -->
+        <div v-if="fileInfo.scanSkipped" class="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-5 shadow-lg">
+          <div class="flex items-start">
+            <AlertTriangleIcon class="w-6 h-6 text-yellow-600 mr-3 flex-shrink-0" />
+            <div class="flex-1">
+              <p class="text-sm font-bold text-yellow-900 mb-2">Optional safety scan available</p>
+              <p class="text-sm text-yellow-800 mb-3">
+                This file was uploaded without a scan. You can run a safety scan before downloading.
+              </p>
+              <div class="flex flex-wrap gap-3 items-center">
+                <button
+                  @click="runSafetyScan"
+                  :disabled="scanBeforeStatus === 'scanning'"
+                  class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {{ scanBeforeStatus === 'scanning' ? 'Scanning...' : 'Run Safety Scan' }}
+                </button>
+                <span v-if="scanBeforeMessage" class="text-sm font-semibold" :class="scanBeforeClass">
+                  {{ scanBeforeMessage }}
+                </span>
+              </div>
+              <p class="text-xs text-yellow-700 mt-2">
+                This is optional and does not affect your download availability.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -275,7 +322,7 @@
           <ul class="text-base text-green-700 space-y-3">
             <li class="flex items-center">
               <CheckCircleIcon class="w-5 h-5 mr-3 flex-shrink-0" />
-              <span>Scanned by ClamAV antivirus</span>
+              <span>Scanned by advanced antivirus engine</span>
             </li>
             <li class="flex items-center">
               <CheckCircleIcon class="w-5 h-5 mr-3 flex-shrink-0" />
@@ -306,7 +353,7 @@ import {
   CopyIcon, CheckCircleIcon, RefreshCwIcon
 } from 'lucide-vue-next';
 import { formatFileSize, formatTimeRemaining } from '@fileduck/shared';
-import { redeemShareCode } from '../services/api';
+import { redeemShareCode, scanBeforeDownload } from '../services/api';
 import { useNotifications } from '../composables/useNotifications';
 import TurnstileWidget from '../components/TurnstileWidget.vue';
 
@@ -325,6 +372,11 @@ const captchaToken = ref('');
 const errorMessage = ref('');
 const downloadUrl = ref('');
 const downloadProgress = ref(0);
+const scanBeforeStatus = ref<'idle' | 'scanning' | 'clean' | 'infected' | 'suspicious' | 'skipped' | 'error'>('idle');
+const scanBeforeMessage = ref('');
+const isPreDownloadScanning = ref(false);
+const preDownloadScanStatus = ref<'idle' | 'clean' | 'infected' | 'suspicious' | 'error'>('idle');
+const preDownloadScanMessage = ref('');
 const fileInfo = ref({
   filename: '',
   size: 0,
@@ -337,6 +389,14 @@ const fileInfo = ref({
 });
 
 const turnstilesiteKey = computed(() => import.meta.env.VITE_TURNSTILE_SITE_KEY || '0x4AAAAAACYFda-OmtIrzikn');
+
+const scanBeforeClass = computed(() => {
+  if (scanBeforeStatus.value === 'clean') return 'text-green-700';
+  if (scanBeforeStatus.value === 'infected') return 'text-red-700';
+  if (scanBeforeStatus.value === 'suspicious') return 'text-orange-700';
+  if (scanBeforeStatus.value === 'error' || scanBeforeStatus.value === 'skipped') return 'text-yellow-700';
+  return 'text-yellow-800';
+});
 
 onMounted(() => {
   // Check if share code is in URL
@@ -418,7 +478,75 @@ const handleCaptchaError = (error: string) => {
   captchaToken.value = '';
 };
 
+const runSafetyScan = async () => {
+  if (!inputCode.value || scanBeforeStatus.value === 'scanning') return;
+
+  scanBeforeStatus.value = 'scanning';
+  scanBeforeMessage.value = 'Scanning...';
+
+  try {
+    const result = await scanBeforeDownload(inputCode.value);
+
+    const decision = result?.decision || (result?.clean ? 'clean' : 'unknown');
+
+    if (decision === 'clean') {
+      scanBeforeStatus.value = 'clean';
+      scanBeforeMessage.value = 'No threats found.';
+    } else if (decision === 'infected') {
+      scanBeforeStatus.value = 'infected';
+      scanBeforeMessage.value = result?.clamav?.virus
+        ? `Threat detected: ${result.clamav.virus}`
+        : 'Threat detected.';
+    } else if (decision === 'suspicious') {
+      scanBeforeStatus.value = 'suspicious';
+      scanBeforeMessage.value = 'Potential risk detected.';
+    } else if (decision === 'skipped') {
+      scanBeforeStatus.value = 'skipped';
+      scanBeforeMessage.value = 'Scan unavailable right now.';
+    } else {
+      scanBeforeStatus.value = 'error';
+      scanBeforeMessage.value = 'Scan failed. You can still download.';
+    }
+  } catch (err) {
+    console.error('Safety scan failed:', err);
+    scanBeforeStatus.value = 'error';
+    scanBeforeMessage.value = 'Scan failed. You can still download.';
+  }
+};
+
 const downloadSuccess = ref(false);
+
+const runPreDownloadScan = async () => {
+  if (!inputCode.value || isPreDownloadScanning.value) return;
+
+  try {
+    isPreDownloadScanning.value = true;
+    preDownloadScanStatus.value = 'idle';
+    preDownloadScanMessage.value = 'Running security scan...';
+
+    const result = await scanBeforeDownload(inputCode.value);
+
+    if (result.decision === 'infected') {
+      preDownloadScanStatus.value = 'infected';
+      preDownloadScanMessage.value = 'Scan result: Threat detected. Avoid downloading unless you trust the sender.';
+    } else if (result.decision === 'suspicious') {
+      preDownloadScanStatus.value = 'suspicious';
+      preDownloadScanMessage.value = 'Scan result: Suspicious signals found. Download with caution.';
+    } else if (result.decision === 'clean') {
+      preDownloadScanStatus.value = 'clean';
+      preDownloadScanMessage.value = 'Scan result: No threats detected.';
+    } else {
+      preDownloadScanStatus.value = 'error';
+      preDownloadScanMessage.value = 'Scan result: Unable to determine. Please try again later.';
+    }
+  } catch (err) {
+    console.error('Pre-download scan failed:', err);
+    preDownloadScanStatus.value = 'error';
+    preDownloadScanMessage.value = 'Scan failed. Please try again later.';
+  } finally {
+    isPreDownloadScanning.value = false;
+  }
+};
 
 const initiateDownload = async () => {
   if (!downloadUrl.value) return;
@@ -530,6 +658,8 @@ const resetForm = () => {
   captchaRequired.value = false;
   captchaToken.value = '';
   downloadProgress.value = 0;
+  scanBeforeStatus.value = 'idle';
+  scanBeforeMessage.value = '';
 };
 
 const copyChecksum = () => {

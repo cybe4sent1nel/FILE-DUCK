@@ -204,7 +204,7 @@
           </div>
         </div>
 
-        <!-- Scan Skipped Warning (For large files >100MB) -->
+        <!-- Scan Skipped Warning (Large files or scanner unavailable) -->
         <div v-else-if="scanStatus === 'skipped'" class="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-6">
           <div class="flex items-center space-x-4">
             <div class="flex-shrink-0">
@@ -213,16 +213,29 @@
             <div class="flex-1">
               <div class="flex items-center space-x-2 mb-2">
                 <AlertTriangleIcon class="w-7 h-7 text-yellow-600" />
-                <p class="text-xl font-bold text-yellow-800">⚠️ File Too Large for Scanning</p>
+                <p class="text-xl font-bold text-yellow-800">
+                  ⚠️
+                  <span v-if="scanSkipReason === 'too_large'">File Too Large for Scanning</span>
+                  <span v-else-if="scanSkipReason === 'scanner_unavailable'">Scanner Temporarily Unavailable</span>
+                  <span v-else>Large File - Scanning Disabled by Default</span>
+                </p>
               </div>
               <p class="text-yellow-700 font-medium mb-2">
-                This file is larger than 100MB and cannot be scanned with our malware scanner.
+                <span v-if="scanSkipReason === 'too_large'">
+                  This file is larger than 100MB and cannot be scanned with our malware scanner.
+                </span>
+                <span v-else-if="scanSkipReason === 'scanner_unavailable'">
+                  Our large-file scanner is currently unavailable.
+                </span>
+                <span v-else>
+                  Large files (&gt;50MB) have scanning disabled by default to reduce delays.
+                </span>
               </p>
               <p class="text-sm text-yellow-600 mb-3">
                 The file will be uploaded <strong>without virus scanning</strong>. Recipients will be warned that this file was not scanned.
               </p>
               <p class="text-xs text-yellow-600">
-                💡 <strong>Tip:</strong> Files up to 100MB are scanned using VirusTotal (≤32MB) and MetaDefender (32-100MB).
+                💡 <strong>Tip:</strong> Files ≤32MB use VirusTotal. Files &gt;32MB use our large-file scanner. Files &gt;100MB skip scanning.
               </p>
             </div>
           </div>
@@ -340,8 +353,13 @@
               </span>
               <span class="font-bold text-xl text-purple-500">{{ uploadProgress }}%</span>
             </div>
-            <div class="w-full bg-gray-200 rounded-full h-3">
-              <div class="progress-fill h-3" :style="{ width: uploadProgress + '%' }"></div>
+            <div class="w-full h-5 rail-track relative p-[2px]">
+              <div
+                class="h-full plasma-fill rounded-sm transition-all duration-150 ease-linear"
+                :style="{ width: uploadProgress + '%' }"
+              >
+                <div v-if="uploadProgress > 0" class="fusion-head"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -585,6 +603,7 @@ const enableEncryption = ref(false);
 const isScanning = ref(false);
 const scanStatus = ref<'pending' | 'clean' | 'malicious' | 'skipped' | null>(null);
 const virusDetails = ref('');
+const scanSkipReason = ref<'too_large' | 'user_disabled' | 'scanner_unavailable' | ''>('');
 const allowQuarantine = ref(false);
 const requireCaptcha = ref(false);
 const enableScan = ref(true);
@@ -616,19 +635,29 @@ const processFile = async (file: File) => {
   scanStatus.value = null;
   virusDetails.value = '';
   isScanning.value = false;
+  scanSkipReason.value = '';
 
   try {
     // Compute SHA-256 hash
     const hash = await computeSHA256(file);
     sha256Hash.value = hash;
     
+    // Default: disable scanning for large files (>50MB)
+    enableScan.value = file.size <= 50 * 1024 * 1024;
+
     // Check if file is too large for scanning (>100MB)
     const isTooLargeForScan = file.size > 100 * 1024 * 1024;
     
     // Check if user disabled scanning
     if (!enableScan.value || isTooLargeForScan) {
       // File scanning is disabled or file is too large
-      console.warn(enableScan.value ? 'File too large for virus scanning (>100MB), skipping scan' : 'Scanning disabled by user');
+      if (isTooLargeForScan) {
+        console.warn('File too large for virus scanning (>100MB), skipping scan');
+        scanSkipReason.value = 'too_large';
+      } else {
+        console.warn('Scanning disabled by user (large file)');
+        scanSkipReason.value = 'user_disabled';
+      }
       isScanning.value = false;
       scanStatus.value = 'skipped';
       return;
@@ -666,12 +695,18 @@ const processFile = async (file: File) => {
       isScanning.value = false;
       
       // If scanner is not available, allow upload with warning
-      if (scanError.code === 'ERR_NETWORK' || scanError.message?.includes('Network Error')) {
+      if (scanError.response?.status === 503 && scanError.response?.data?.code === 'SCANNER_UNAVAILABLE') {
+        console.warn('Large-file scanner unavailable, skipping scan');
+        scanStatus.value = 'skipped';
+        scanSkipReason.value = 'scanner_unavailable';
+      } else if (scanError.code === 'ERR_NETWORK' || scanError.message?.includes('Network Error')) {
         console.warn('Scanner service unavailable, proceeding without scan');
-        scanStatus.value = 'clean';
+        scanStatus.value = 'skipped';
+        scanSkipReason.value = 'scanner_unavailable';
       } else if (scanError.response?.status === 413) {
         console.warn('File too large for scanning, skipping scan');
         scanStatus.value = 'skipped';
+        scanSkipReason.value = 'too_large';
       } else {
         scanStatus.value = 'malicious';
         virusDetails.value = `Scan error: ${scanError.response?.data?.message || scanError.message || 'Unable to scan file. Please try again.'}`;
@@ -865,7 +900,7 @@ const startScanSimulation = () => {
     // Randomly show clean or malicious for demo (remove in production)
     // scanStatus.value = Math.random() > 0.9 ? 'malicious' : 'clean';
     // if (scanStatus.value === 'malicious') {
-    //   virusDetails.value = 'ClamAV detected: Trojan.Generic.12345 | VirusTotal: 3/70 engines detected malicious signatures';
+    //   virusDetails.value = 'Threat detected: Trojan.Generic.12345 | VirusTotal: 3/70 engines detected malicious signatures';
     // }
     scanStatus.value = 'clean'; // Default to clean
   }, 3000);

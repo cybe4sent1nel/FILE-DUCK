@@ -19,7 +19,7 @@ clientsClaim();
 cleanupOutdatedCaches();
 
 // Filter out forbidden pages from precache manifest
-const FORBIDDEN_PATTERNS = ['/', '/index.html', '/download', '/privacy', '/terms'];
+const FORBIDDEN_PATTERNS = ['/', '/index.html', 'index.html', '/download', '/privacy', '/terms'];
 const filteredManifest = self.__WB_MANIFEST.filter((entry: any) => {
   const url = typeof entry === 'string' ? entry : entry.url;
   const shouldExclude = FORBIDDEN_PATTERNS.some(pattern => url === pattern || url.endsWith(pattern));
@@ -59,7 +59,7 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
       const cacheNames = await caches.keys();
       
       // Pages that should NEVER be cached
-      const forbiddenPages = ['/', '/index.html', '/download', '/privacy', '/terms'];
+      const forbiddenPages = ['/', '/index.html', 'index.html', '/download', '/privacy', '/terms'];
       
       for (const cacheName of cacheNames) {
         const cache = await caches.open(cacheName);
@@ -75,6 +75,19 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
           const deleted2 = await cache.delete(fullUrl);
           if (deleted2) {
             console.log(`[SW] Removed ${fullUrl} from ${cacheName}`);
+          }
+        }
+
+        // Remove any cached HTML documents except allowed pages
+        const requests = await cache.keys();
+        for (const request of requests) {
+          const url = new URL(request.url);
+          const isAllowed = CACHEABLE_PAGES.includes(url.pathname);
+          if (request.destination === 'document' && !isAllowed) {
+            const removed = await cache.delete(request);
+            if (removed) {
+              console.log(`[SW] Removed cached document ${url.pathname} from ${cacheName}`);
+            }
           }
         }
         
@@ -134,7 +147,7 @@ registerRoute(
 );
 
 // Pages that should NEVER be cached (always fetch from network)
-const FORBIDDEN_PAGES = ['/', '/index.html', '/download', '/privacy', '/terms'];
+const FORBIDDEN_PAGES = ['/', '/index.html', 'index.html', '/download', '/privacy', '/terms'];
 
 // Custom navigation handler - redirect to offline page when offline
 const navigationHandler = async (options: any) => {
@@ -164,7 +177,7 @@ const navigationHandler = async (options: any) => {
     
     const response = await fetch(request, { 
       signal: controller.signal,
-      cache: 'no-cache'
+      cache: isForbiddenPage ? 'no-store' : 'no-cache'
     });
     clearTimeout(timeoutId);
     
@@ -262,14 +275,14 @@ self.addEventListener('fetch', (event: FetchEvent) => {
   const url = new URL(event.request.url);
   
   // Forbidden pages that should NEVER be cached
-  const forbiddenPaths = ['/', '/index.html', '/download', '/privacy', '/terms'];
+  const forbiddenPaths = ['/', '/index.html', 'index.html', '/download', '/privacy', '/terms'];
   const isForbiddenPage = forbiddenPaths.some(path => url.pathname === path);
   
   // If it's a forbidden page request, force network or show offline
   if (isForbiddenPage) {
     console.log('[SW] Intercepting forbidden page:', url.pathname);
     event.respondWith(
-      fetch(event.request)
+      fetch(new Request(event.request, { cache: 'no-store' }))
         .then(response => {
           console.log('[SW] Serving forbidden page from network:', url.pathname);
           return response;
@@ -324,5 +337,25 @@ self.addEventListener('fetch', (event: FetchEvent) => {
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+  }
+
+  if (event.data && event.data.type === 'CLEAR_FORBIDDEN_CACHES') {
+    event.waitUntil(
+      (async () => {
+        const cacheNames = await caches.keys();
+        const forbiddenPages = ['/', '/index.html', 'index.html', '/download', '/privacy', '/terms'];
+        for (const cacheName of cacheNames) {
+          const cache = await caches.open(cacheName);
+          const requests = await cache.keys();
+          for (const request of requests) {
+            const url = new URL(request.url);
+            const isAllowed = CACHEABLE_PAGES.includes(url.pathname);
+            if (forbiddenPages.includes(url.pathname) || (request.destination === 'document' && !isAllowed)) {
+              await cache.delete(request);
+            }
+          }
+        }
+      })()
+    );
   }
 });

@@ -44,6 +44,7 @@ const getRedeemHandler = async () => (await import('./api/redeem.js')).default;
 const getConfirmDownloadHandler = async () => (await import('./api/confirm-download.js')).default;
 const getGitHubUploadHandler = async () => (await import('./api/github-upload.js')).default;
 const getProxyDownloadHandler = async () => (await import('./api/proxy-download.js')).default;
+const getScanBeforeDownloadHandler = async () => (await import('./api/scan-before-download.js')).default;
 const getScanHandler = async () => (await import('./api/scan.js')).default;
 const getDeleteFileHandler = async () => (await import('./api/delete-file.js')).default;
 const getCleanupExpiredHandler = async () => (await import('./api/cleanup-expired.js')).default;
@@ -112,6 +113,16 @@ app.post('/api/github-upload', async (req: Request, res: Response) => {
 app.get('/api/proxy-download', async (req: Request, res: Response) => {
   try {
     await (await getProxyDownloadHandler())(req as any, res as any);
+  } catch (error: any) {
+    if (!res.headersSent) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+});
+
+app.post('/api/scan-before-download', async (req: Request, res: Response) => {
+  try {
+    await (await getScanBeforeDownloadHandler())(req as any, res as any);
   } catch (error: any) {
     if (!res.headersSent) {
       res.status(500).json({ error: error.message });

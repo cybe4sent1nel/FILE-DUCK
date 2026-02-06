@@ -110,52 +110,61 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'SHA256 hash mismatch' });
     }
 
-    // Try Railway scanner service first
-    try {
-      // Forward file to Railway scanner service
-      const formData = new FormData();
-      formData.append('file', fs.createReadStream(file.filepath), {
-        filename: file.originalFilename || 'file',
-        contentType: file.mimetype || 'application/octet-stream'
-      });
-      
-      if (sha256Provided) {
-        formData.append('sha256', sha256Provided);
+    // For files >32MB, use ClamAV (Railway scanner)
+    if (file.size > VIRUSTOTAL_MAX_SIZE) {
+      try {
+        // Verify Railway scanner health before sending
+        await axios.get(`${RAILWAY_SCANNER_URL}/health`, { timeout: 5000 });
+
+        // Forward file to Railway scanner service
+        const formData = new FormData();
+        formData.append('file', fs.createReadStream(file.filepath), {
+          filename: file.originalFilename || 'file',
+          contentType: file.mimetype || 'application/octet-stream'
+        });
+        
+        if (sha256Provided) {
+          formData.append('sha256', sha256Provided);
+        }
+
+        console.log(`Forwarding file to Railway ClamAV scanner...`);
+        
+        const scannerResponse = await axios.post(`${RAILWAY_SCANNER_URL}/scan`, formData, {
+          headers: {
+            ...formData.getHeaders(),
+          },
+          timeout: 300000, // 5 minutes timeout for large files
+        });
+
+        // Cleanup temp file
+        fs.unlinkSync(file.filepath);
+
+        // Return the scanner response
+        return res.status(200).json(scannerResponse.data);
+      } catch (scannerError: any) {
+        console.error('Railway ClamAV scanner error:', scannerError);
+
+        // Cleanup temp file
+        fs.unlinkSync(file.filepath);
+
+        return res.status(503).json({
+          error: 'Scanner unavailable',
+          code: 'SCANNER_UNAVAILABLE',
+          message: 'Large-file scanner is unavailable. Upload will proceed without scanning.',
+        });
       }
-
-      console.log(`Forwarding file to Railway scanner service...`);
-      
-      const scannerResponse = await axios.post(`${RAILWAY_SCANNER_URL}/scan`, formData, {
-        headers: {
-          ...formData.getHeaders(),
-        },
-        timeout: 300000, // 5 minutes timeout for large files
-      });
-
-      // Cleanup temp file
-      fs.unlinkSync(file.filepath);
-
-      // Return the scanner response
-      return res.status(200).json(scannerResponse.data);
-
-    } catch (scannerError: any) {
-      console.error('Railway scanner error:', scannerError);
-      
-      // If Railway scanner fails, fall back to local scanning
-      console.log('Falling back to local scanning...');
     }
 
-    // Fallback: Determine which scanner to use based on file size
+    // For files ≤32MB, use VirusTotal (fallback if VT key missing)
     let vtResult = null;
     let mdResult = null;
-    
-    if (file.size <= VIRUSTOTAL_MAX_SIZE) {
-      // Use VirusTotal for files ≤32MB
-      console.log('Scanning file with VirusTotal...');
-      vtResult = await scanWithVirusTotal(hash, file.filepath);
-    } else {
-      // Use MetaDefender for files 32MB-100MB
-      console.log('Scanning file with MetaDefender...');
+
+    console.log('Scanning file with VirusTotal...');
+    vtResult = await scanWithVirusTotal(hash, file.filepath);
+
+    // If VirusTotal is not configured or fails, try MetaDefender as fallback
+    if (!vtResult) {
+      console.log('VirusTotal unavailable, falling back to MetaDefender...');
       mdResult = await scanWithMetaDefender(file.filepath, hash);
     }
 
