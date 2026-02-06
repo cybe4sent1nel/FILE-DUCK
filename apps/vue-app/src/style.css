@@ -41,12 +41,33 @@ input[type="checkbox"], input[type="radio"], input[type="file"],
 
 /* Ensure all child elements inside buttons and links inherit pointer cursor */
 button *, [role="button"] *, [type="button"] *, [type="submit"] *, [type="reset"] *,
-a *, a[href] *, .cursor-pointer *,
+a:not(label) *, a[href]:not(label) *,
 .router-link-active *, .router-link-exact-active *,
 button span, button svg, button div, button img,
-a span, a svg, a div, a img {
+a:not(label) span, a:not(label) svg, a:not(label) div, a:not(label) img {
   cursor: url('/cursor-pointer.svg') 8 8, pointer !important;
+}
+
+/* Disable pointer events only on decorative elements inside buttons/links (not labels) */
+button svg, button svg *,
+a:not(label) svg, a:not(label) svg *,
+.router-link-active svg, .router-link-active svg *,
+.router-link-exact-active svg, .router-link-exact-active svg * {
   pointer-events: none;
+}
+
+/* Labels and their children should allow pointer events for file inputs */
+label, label * {
+  pointer-events: auto !important;
+}
+
+/* Cursor pointer specifically on labels */
+label[for] {
+  cursor: url('/cursor-pointer.svg') 8 8, pointer !important;
+}
+
+label[for] * {
+  cursor: url('/cursor-pointer.svg') 8 8, pointer !important;
 }
 
 /* Ensure all buttons have proper hover areas */
@@ -66,8 +87,11 @@ input[type="tel"], input[type="url"], input[type="number"], textarea,
   cursor: url('/textcursor.svg') 16 16, text !important;
 }
 
-/* Ensure SVG icons inherit cursor from parent */
-svg, svg * {
+/* Ensure SVG icons inherit cursor from parent (but not inside labels for file inputs) */
+button svg, button svg *,
+a:not(label) svg, a:not(label) svg *,
+[role="button"]:not(label) svg, [role="button"]:not(label) svg *,
+.router-link svg, .router-link svg * {
   pointer-events: none;
 }
 
@@ -75,19 +99,26 @@ h1, h2, h3, h4, h5, h6 {
   font-family: 'Outfit', sans-serif;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar - light purple pill */
 ::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #1a1625; 
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2d283b; 
-  border-radius: 4px;
+  background: #c084fc;
+  border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #c084fc; 
+  background: #a855f7;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c084fc transparent;
 }
 @keyframes gradient {
   0% {

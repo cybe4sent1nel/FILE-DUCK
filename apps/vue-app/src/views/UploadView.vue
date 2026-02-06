@@ -62,14 +62,15 @@
       <div v-if="!uploadComplete" class="space-y-6">
         <!-- File Selection with Animation -->
         <div
+          @click="triggerFileInput"
           @drop.prevent="handleDrop"
           @dragover.prevent
           @dragenter="isDragging = true"
           @dragleave="isDragging = false"
           :class="[
             'border-2 sm:border-3 border-dashed rounded-xl sm:rounded-2xl p-6 sm:p-8 md:p-12 text-center cursor-pointer transition-all duration-300',
-            isDragging 
-              ? 'border-purple-400 bg-purple-50' 
+            isDragging
+              ? 'border-purple-400 bg-purple-50'
               : 'border-purple-200 hover:border-purple-300 hover:bg-purple-50/30',
           ]"
         >
@@ -615,6 +616,15 @@ watch(selectedFile, (file) => {
     enableScan.value = file.size <= 50 * 1024 * 1024;
   }
 });
+
+const triggerFileInput = (event: MouseEvent) => {
+  // Don't trigger if clicking on the remove button
+  const target = event.target as HTMLElement;
+  if (target.closest('button')) {
+    return;
+  }
+  fileInput.value?.click();
+};
 
 const handleFileSelect = async (event: Event) => {
   const target = event.target as HTMLInputElement;
