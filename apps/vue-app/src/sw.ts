@@ -64,18 +64,15 @@ registerRoute(
 );
 
 // Handle navigation requests with the App Shell (index.html)
-// Use CacheFirst for navigation to ensure offline works properly
-registerRoute(
-  ({ request }) => request.mode === 'navigate',
-  new CacheFirst({
-    cacheName: 'navigation-cache',
-    plugins: [
-      new CacheableResponsePlugin({
-        statuses: [0, 200],
-      }),
-    ],
-  })
-);
+// Only handle actual navigation (HTML page requests), not assets
+const handler = createHandlerBoundToURL('/index.html');
+const navigationRoute = new NavigationRoute(handler, {
+  denylist: [
+    /^\/api/, // Don't handle API routes
+  ],
+});
+
+registerRoute(navigationRoute);
 
 // Listen for messages from the client
 self.addEventListener('message', (event) => {

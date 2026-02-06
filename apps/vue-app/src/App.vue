@@ -207,10 +207,18 @@ onMounted(() => {
 
   const handleOffline = () => {
     console.log('Went offline');
-    if (router.currentRoute.value.path !== '/offline') {
+    const currentPath = router.currentRoute.value.path;
+    // Redirect to offline page unless already there
+    // Note: /history is accessible offline for viewing cached records
+    if (currentPath !== '/offline' && currentPath !== '/history') {
       router.push('/offline');
     }
   };
+
+  // Check initial offline state
+  if (!navigator.onLine && router.currentRoute.value.path !== '/offline' && router.currentRoute.value.path !== '/history') {
+    router.push('/offline');
+  }
 
   window.addEventListener('online', handleOnline);
   window.addEventListener('offline', handleOffline);
