@@ -58,13 +58,23 @@
           <li>Verifying file checksums after download</li>
           <li>Keeping share codes confidential</li>
           <li>Scanning downloaded files with your own antivirus</li>
+          <li>Managing your browser's local storage and cache</li>
+          <li>Backing up important files (we are a temporary sharing service)</li>
           <li>Complying with applicable laws</li>
         </ul>
 
-        <h2 class="text-2xl font-bold mt-6 mb-4">8. Advertising</h2>
+        <h2 class="text-2xl font-bold mt-6 mb-4">8. Local Data Storage</h2>
+        <p class="mb-4">FileDuck stores your upload history locally in your browser using:</p>
+        <ul class="list-disc pl-6 mb-4 space-y-2">
+          <li><strong>LocalStorage:</strong> For backward compatibility and quick access</li>
+          <li><strong>IndexedDB:</strong> For persistent, structured storage that survives cache clearing</li>
+        </ul>
+        <p class="mb-4">This data never leaves your device. You can clear it anytime from the History page or browser settings.</p>
+
+        <h2 class="text-2xl font-bold mt-6 mb-4">9. Advertising</h2>
         <p class="mb-4">FileDuck displays advertisements through Google AdSense to support the free service. By using FileDuck, you consent to viewing ads.</p>
 
-        <h2 class="text-2xl font-bold mt-6 mb-4">9. Termination</h2>
+        <h2 class="text-2xl font-bold mt-6 mb-4">10. Termination</h2>
         <p class="mb-4">We reserve the right to:</p>
         <ul class="list-disc pl-6 mb-4 space-y-2">
           <li>Remove content that violates these terms</li>
@@ -72,10 +82,10 @@
           <li>Suspend or terminate the service at any time</li>
         </ul>
 
-        <h2 class="text-2xl font-bold mt-6 mb-4">10. Changes to Terms</h2>
+        <h2 class="text-2xl font-bold mt-6 mb-4">11. Changes to Terms</h2>
         <p class="mb-4">We may update these terms at any time. Continued use constitutes acceptance of updated terms.</p>
 
-        <h2 class="text-2xl font-bold mt-6 mb-4">11. Contact</h2>
+        <h2 class="text-2xl font-bold mt-6 mb-4">12. Contact</h2>
         <p class="mb-4">For questions about these terms, contact: <a href="mailto:legal@fileduck.app" class="text-blue-600 hover:underline">legal@fileduck.app</a></p>
       </div>
     </div>

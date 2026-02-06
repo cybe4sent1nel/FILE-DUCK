@@ -574,7 +574,7 @@ import {
 } from 'lucide-vue-next';
 import { computeSHA256, formatFileSize, formatTimeRemaining } from '@fileduck/shared';
 import { uploadFileMeta, uploadToS3, scanFileBeforeUpload } from '../services/api';
-import { addToUploadHistory } from '../services/uploadHistory';
+import { addToUploadHistory, requestPersistentStorage } from '../services/uploadHistory';
 
 const { success, error } = useNotifications();
 
@@ -841,6 +841,9 @@ const uploadFile = async () => {
       maxUses: maxUses.value,
       usesLeft: maxUses.value,
     });
+    
+    // Request persistent storage on first upload (user interaction context)
+    requestPersistentStorage().catch(() => {});
     
     // Start virus scanning
     startScanSimulation();

@@ -26,17 +26,30 @@ const DB_VERSION = 1;
 const STORE_NAME = 'upload_history';
 
 // Request persistent storage to prevent deletion on cache clear
-async function requestPersistentStorage(): Promise<boolean> {
-  if (navigator.storage && navigator.storage.persist) {
-    const isPersisted = await navigator.storage.persist();
-    console.log(`Persistent storage ${isPersisted ? 'granted' : 'denied'}`);
-    return isPersisted;
+export async function requestPersistentStorage(): Promise<boolean> {
+  if (!navigator.storage || !navigator.storage.persist) {
+    return false;
   }
-  return false;
+
+  try {
+    // Check if already persisted
+    if (await navigator.storage.persisted()) {
+      return true;
+    }
+
+    // Request persistence (requires user interaction)
+    const isPersisted = await navigator.storage.persist();
+    if (isPersisted) {
+      console.log('✓ Persistent storage granted - Upload history will be preserved');
+    }
+    return isPersisted;
+  } catch (error) {
+    // Silently fail - app works fine without persistent storage
+    return false;
+  }
 }
 
-// Initialize persistent storage on module load
-requestPersistentStorage();
+// Don't auto-request on module load - wait for user interaction
 
 // IndexedDB wrapper for persistent storage
 function openDB(): Promise<IDBDatabase> {

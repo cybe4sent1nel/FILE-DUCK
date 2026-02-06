@@ -32,14 +32,16 @@
           <li><strong>Cloudflare:</strong> For CDN and DDoS protection</li>
         </ul>
 
-        <h2 class="text-2xl font-bold mt-6 mb-4">4. Cookies and Tracking</h2>
-        <p class="mb-4">We use cookies for:</p>
+        <h2 class="text-2xl font-bold mt-6 mb-4">4. Local Storage and Cookies</h2>
+        <p class="mb-4">We use browser storage technologies:</p>
         <ul class="list-disc pl-6 mb-4 space-y-2">
-          <li>Session management</li>
-          <li>Google AdSense advertising (see <a href="https://policies.google.com/technologies/cookies" class="text-blue-600 hover:underline" target="_blank" rel="noopener">Google's Cookie Policy</a>)</li>
-          <li>Analytics</li>
+          <li><strong>LocalStorage & IndexedDB:</strong> To store your upload history locally on your device (no server storage, completely private)</li>
+          <li><strong>Service Workers:</strong> To enable offline access and faster loading</li>
+          <li><strong>Cookies:</strong> For session management and Google AdSense advertising</li>
+          <li><strong>Cache Storage:</strong> To store static assets for offline functionality</li>
         </ul>
-        <p class="mb-4">You can control cookies through your browser settings.</p>
+        <p class="mb-4">All local data stays on your device and is never transmitted to our servers. You can clear it anytime through your browser settings or our app's history page.</p>
+        <p class="mb-4">Google AdSense: See <a href="https://policies.google.com/technologies/cookies" class="text-blue-600 hover:underline" target="_blank" rel="noopener">Google's Cookie Policy</a>.</p>
 
         <h2 class="text-2xl font-bold mt-6 mb-4">5. Data Retention</h2>
         <ul class="list-disc pl-6 mb-4 space-y-2">
@@ -61,8 +63,11 @@
         <p class="mb-4">You have the right to:</p>
         <ul class="list-disc pl-6 mb-4 space-y-2">
           <li>Request deletion of your files at any time</li>
+          <li>Clear your local upload history from our History page</li>
+          <li>Disable persistent storage through browser settings</li>
           <li>Opt-out of personalized advertising</li>
           <li>Request information about data we've collected</li>
+          <li>Use the service without creating an account (no personal data collection)</li>
         </ul>
 
         <h2 class="text-2xl font-bold mt-6 mb-4">8. Children's Privacy</h2>
