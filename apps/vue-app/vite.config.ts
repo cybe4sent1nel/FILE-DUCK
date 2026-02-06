@@ -23,13 +23,12 @@ export default defineConfig({
       },
       injectManifest: {
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
-        globPatterns: ['**/*.{js,css,ico,png,svg,json,txt,woff2,html}'], // Included html for app shell
-        globIgnores: ['**/node_modules/**/*', 'sw.js', 'workbox-*.js'],
-        // Pre-cache ONLY offline, error, and history pages - NEVER home/download/privacy/terms
+        globPatterns: ['**/*.{js,css,ico,png,svg,json,txt,woff2,html}'],
+        globIgnores: ['**/node_modules/**/*'],
+        // Include index.html for offline fallback
         additionalManifestEntries: [
-          { url: '/offline', revision: '3' },
-          { url: '/error', revision: '3' },
-          { url: '/history', revision: '3' }
+          { url: '/', revision: '4' },
+          { url: '/index.html', revision: '4' },
         ],
       },
       workbox: {

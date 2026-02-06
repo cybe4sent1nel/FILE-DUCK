@@ -63,16 +63,45 @@ registerRoute(
   })
 );
 
-// Handle navigation requests with the App Shell (index.html)
-// Only handle actual navigation (HTML page requests), not assets
-const handler = createHandlerBoundToURL('/index.html');
-const navigationRoute = new NavigationRoute(handler, {
-  denylist: [
-    /^\/api/, // Don't handle API routes
-  ],
-});
+// Handle navigation requests with offline fallback
+// Use NetworkFirst to serve cached content when offline
+registerRoute(
+  ({ request }) => request.mode === 'navigate',
+  new NetworkFirst({
+    cacheName: 'pages',
+    plugins: [
+      new CacheableResponsePlugin({
+        statuses: [0, 200],
+      }),
+    ],
+    networkTimeoutSeconds: 3,
+  })
+);
 
-registerRoute(navigationRoute);
+// Catch-all offline handler
+self.addEventListener('fetch', (event) => {
+  // Only handle navigation requests
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .catch(async () => {
+          // Network failed, try cache
+          const cache = await caches.match(event.request);
+          if (cache) return cache;
+          
+          // Fallback to cached index.html
+          const indexCache = await caches.match('/index.html') || await caches.match('/');
+          if (indexCache) return indexCache;
+          
+          // Last resort fallback
+          return new Response(
+            '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Offline</title></head><body><h1>Offline</h1><p>Please check your connection</p></body></html>',
+            { headers: { 'Content-Type': 'text/html' } }
+          );
+        })
+    );
+  }
+});
 
 // Listen for messages from the client
 self.addEventListener('message', (event) => {
