@@ -99,20 +99,33 @@ h1, h2, h3, h4, h5, h6 {
   font-family: 'Outfit', sans-serif;
 }
 
-/* Custom scrollbar - light purple pill */
+/* Custom scrollbar - light purple pill only, no track */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
+  border: none;
+  width: 0;
+}
+::-webkit-scrollbar-track-piece {
+  background: transparent;
+  border: none;
 }
 ::-webkit-scrollbar-thumb {
   background: #c084fc;
   border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #a855f7;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 /* Firefox scrollbar */

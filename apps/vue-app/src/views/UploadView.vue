@@ -82,7 +82,7 @@
             id="file-input"
             accept="*/*"
           />
-          <label for="file-input" class="cursor-pointer">
+          <div class="cursor-pointer">
             <div v-if="!selectedFile" class="flex flex-col items-center">
               <Vue3Lottie
                 :animationData="UploadFilesAnimation"
@@ -119,7 +119,7 @@
                 <XIcon class="w-5 h-5" />
               </button>
             </div>
-          </label>
+          </div>
         </div>
 
         <!-- Scanning in Progress -->
