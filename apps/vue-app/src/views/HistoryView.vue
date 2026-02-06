@@ -3,8 +3,9 @@
     <div class="container mx-auto max-w-6xl">
       <!-- Header -->
       <div class="text-center mb-12">
-        <h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-lemon-400 bg-clip-text text-transparent pb-2">
-          📊 My Activity
+        <h1 class="text-5xl font-bold mb-4 flex items-center justify-center gap-3">
+          <ActivityIcon class="w-12 h-12 text-blue-600" />
+          <span class="bg-gradient-to-r from-purple-400 to-lemon-400 bg-clip-text text-transparent">My Activity</span>
         </h1>
         <p class="text-xl text-gray-600">
           Track your uploads and downloads - No sign-in required!
@@ -226,7 +227,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useNotifications } from '../composables/useNotifications';
 import { Vue3Lottie } from 'vue3-lottie';
-import { FileIcon, CopyIcon, Trash2Icon, UploadIcon, DownloadIcon } from 'lucide-vue-next';
+import { FileIcon, CopyIcon, Trash2Icon, UploadIcon, DownloadIcon, ActivityIcon } from 'lucide-vue-next';
 import ClockLoader from '../components/ClockLoader.vue';
 import {
   getUploadHistory,
