@@ -23,13 +23,13 @@ export default defineConfig({
       },
       injectManifest: {
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,vue,txt,woff2}'],
-        globIgnores: ['**/node_modules/**/*', 'sw.js', 'workbox-*.js'],
-        // Pre-cache only offline, error, and history pages
+        globPatterns: ['**/*.{js,css,ico,png,svg,json,txt,woff2}'], // Removed html to prevent caching index.html
+        globIgnores: ['**/node_modules/**/*', 'sw.js', 'workbox-*.js', 'index.html'],
+        // Pre-cache ONLY offline, error, and history pages - NEVER home/download/privacy/terms
         additionalManifestEntries: [
-          { url: '/offline', revision: '2' },
-          { url: '/error', revision: '2' },
-          { url: '/history', revision: '2' }
+          { url: '/offline', revision: '3' },
+          { url: '/error', revision: '3' },
+          { url: '/history', revision: '3' }
         ],
       },
       workbox: {

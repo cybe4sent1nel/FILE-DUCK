@@ -427,57 +427,21 @@ const initiateDownload = async () => {
     downloadProgress.value = 0;
     success('📥 Download started! Please wait...');
     
-    // Fetch with progress tracking
-    // For GitHub URLs, we need to handle CORS differently
+    // Use proxy for GitHub URLs to avoid CORS issues
     const isGitHubUrl = downloadUrl.value.includes('github.com');
+    const fetchUrl = isGitHubUrl 
+      ? `${import.meta.env.VITE_API_URL}/proxy-download?code=${inputCode.value}`
+      : downloadUrl.value;
     
-    if (isGitHubUrl) {
-      // GitHub releases have CORS issues - use direct link download
-      const a = document.createElement('a');
-      a.href = downloadUrl.value;
-      a.download = fileInfo.value.filename;
-      a.target = '_blank';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      
-      // Assume success for GitHub downloads (no progress tracking)
-      downloadProgress.value = 100;
-      downloadSuccess.value = true;
-      success('✅ Download started! Check your downloads folder.');
-      console.log(`✅ GitHub download initiated: ${fileInfo.value.filename}`);
-      
-      // Confirm download on backend
-      try {
-        const confirmResponse = await fetch(`${import.meta.env.VITE_API_URL}/confirm-download`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ shareCode: inputCode.value }),
-        });
-        const confirmData = await confirmResponse.json();
-        console.log('✅ Download confirmed:', confirmData);
-        
-        import('../services/uploadHistory').then(({ updateUploadHistory }) => {
-          updateUploadHistory(inputCode.value, {
-            usesLeft: confirmData.usesLeft || 0,
-          });
-        });
-        
-        fileInfo.value.usesLeft = confirmData.usesLeft || 0;
-      } catch (err) {
-        console.error('Failed to confirm download:', err);
-      }
-      
-      setTimeout(() => {
-        downloadSuccess.value = false;
-        downloadProgress.value = 0;
-      }, 5000);
-      return;
+    console.log(`📥 Fetching from: ${fetchUrl}`);
+    
+    // Fetch with progress tracking
+    const response = await fetch(fetchUrl);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Download failed:', response.status, errorText);
+      throw new Error(`Download failed: ${response.status}`);
     }
-    
-    // For non-GitHub URLs, use fetch with progress tracking
-    const response = await fetch(downloadUrl.value);
-    if (!response.ok) throw new Error('Download failed');
     
     const reader = response.body?.getReader();
     const contentLength = +(response.headers.get('Content-Length') || fileInfo.value.size);
