@@ -40,6 +40,11 @@ export function computeSHA256(file: any): Promise<string> {
 }
 
 export function formatFileSize(bytes: number): string {
+  // Handle undefined, null, NaN, or invalid values
+  if (bytes === undefined || bytes === null || isNaN(bytes) || bytes < 0) {
+    return '0 B';
+  }
+
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
   let size = bytes;
   let unitIndex = 0;

@@ -4,6 +4,7 @@ import router from './router';
 import App from './App.vue';
 import './style.css';
 import { registerSW } from 'virtual:pwa-register';
+import { requestPersistentStorage } from './services/uploadHistory';
 
 // Force offline landing before app initializes
 if (!navigator.onLine && window.location.pathname !== '/offline') {
@@ -30,6 +31,22 @@ app.config.errorHandler = (err, instance, info) => {
 app.use(createPinia());
 app.use(router);
 app.mount('#app');
+
+// Request persistent storage on first user interaction to prevent data loss
+window.addEventListener('click', () => {
+  requestPersistentStorage().then((granted) => {
+    if (granted) {
+      console.log('✓ Persistent storage granted - Your activity history will be preserved');
+    } else {
+      console.log('ℹ️ Persistent storage not available - History may be cleared if browser storage is full');
+    }
+  });
+}, { once: true });
+
+// Also try to request on load (may not work without user interaction)
+requestPersistentStorage().catch(() => {
+  // Silently fail - will try again on user interaction
+});
 
 // Helper: clear cached documents for forbidden pages
 async function clearForbiddenCachesClient() {

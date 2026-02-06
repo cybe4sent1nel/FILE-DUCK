@@ -46,3 +46,4 @@ coverage/
 deploy-railway.*
 RAILWAY_DEPLOYMENT.md
 .railway/
+tmpclaude-*-cwd

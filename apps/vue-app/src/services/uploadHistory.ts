@@ -1,6 +1,6 @@
 /**
- * Local Storage Manager for Upload History (No Sign-In Required)
- * Stores user's upload history in browser localStorage + Service Worker
+ * Local Storage Manager for Activity History (No Sign-In Required)
+ * Stores user's upload and download history in browser localStorage + IndexedDB
  */
 
 export interface UploadHistoryItem {
@@ -16,6 +16,8 @@ export interface UploadHistoryItem {
   downloadUrl?: string;
   githubReleaseId?: number; // For deletion
   githubMetadata?: any; // Chunk info, compression, etc.
+  activityType?: 'upload' | 'download'; // Track activity type
+  downloadedAt?: number; // Timestamp for downloads
 }
 
 const STORAGE_KEY = 'fileduck_upload_history';
@@ -141,16 +143,63 @@ export async function getUploadHistory(): Promise<UploadHistoryItem[]> {
 export async function addToUploadHistory(item: UploadHistoryItem): Promise<void> {
   try {
     const history = await getUploadHistory();
-    
+
+    // Mark as upload activity
+    if (!item.activityType) {
+      item.activityType = 'upload';
+    }
+
     // Add new item at the beginning
     history.unshift(item);
-    
+
     // Keep only MAX_HISTORY_ITEMS
     const trimmedHistory = history.slice(0, MAX_HISTORY_ITEMS);
-    
+
     await saveUploadHistory(trimmedHistory);
   } catch (error) {
     console.error('Failed to add to upload history:', error);
+  }
+}
+
+/**
+ * Add new download to history
+ */
+export async function addToDownloadHistory(item: Partial<UploadHistoryItem>): Promise<void> {
+  try {
+    const history = await getUploadHistory();
+
+    // Create download activity record
+    const downloadItem: UploadHistoryItem = {
+      id: item.id || `download-${Date.now()}`,
+      shareCode: item.shareCode || '',
+      filename: item.filename || 'Unknown',
+      size: item.size || 0,
+      uploadedAt: item.uploadedAt || Date.now(),
+      expiresAt: item.expiresAt || 0,
+      verificationCode: item.verificationCode || '',
+      maxUses: item.maxUses || 0,
+      usesLeft: item.usesLeft || 0,
+      downloadUrl: item.downloadUrl,
+      activityType: 'download',
+      downloadedAt: Date.now(),
+    };
+
+    // Check if this download already exists in history (to avoid duplicates)
+    const existingIndex = history.findIndex(h => h.shareCode === downloadItem.shareCode && h.activityType === 'download');
+    if (existingIndex !== -1) {
+      // Update existing download record
+      history[existingIndex] = downloadItem;
+    } else {
+      // Add new download at the beginning
+      history.unshift(downloadItem);
+    }
+
+    // Keep only MAX_HISTORY_ITEMS
+    const trimmedHistory = history.slice(0, MAX_HISTORY_ITEMS);
+
+    await saveUploadHistory(trimmedHistory);
+  } catch (error) {
+    console.error('Failed to add to download history:', error);
   }
 }
 
@@ -191,19 +240,47 @@ export async function clearUploadHistory(): Promise<void> {
   try {
     // Clear localStorage
     localStorage.removeItem(STORAGE_KEY);
-    
+
     // Clear IndexedDB
     const db = await openDB();
     const transaction = db.transaction([STORE_NAME], 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
     store.delete(STORAGE_KEY);
-    
+
     return new Promise((resolve, reject) => {
       transaction.oncomplete = () => resolve();
       transaction.onerror = () => reject(transaction.error);
     });
   } catch (error) {
     console.error('Failed to clear upload history:', error);
+  }
+}
+
+/**
+ * Clear only upload records (keep downloads)
+ */
+export async function clearUploadsOnly(): Promise<void> {
+  try {
+    const history = await getUploadHistory();
+    // Keep only downloads
+    const downloadsOnly = history.filter(item => item.activityType === 'download');
+    await saveUploadHistory(downloadsOnly);
+  } catch (error) {
+    console.error('Failed to clear uploads:', error);
+  }
+}
+
+/**
+ * Clear only download records (keep uploads)
+ */
+export async function clearDownloadsOnly(): Promise<void> {
+  try {
+    const history = await getUploadHistory();
+    // Keep only uploads
+    const uploadsOnly = history.filter(item => !item.activityType || item.activityType === 'upload');
+    await saveUploadHistory(uploadsOnly);
+  } catch (error) {
+    console.error('Failed to clear downloads:', error);
   }
 }
 
@@ -243,12 +320,33 @@ export async function getUploadStats(): Promise<{
   const history = await getUploadHistory();
   const now = Date.now();
   const oneHour = 60 * 60 * 1000;
-  
+
+  // Filter to only uploads for statistics
+  const uploads = history.filter(item => !item.activityType || item.activityType === 'upload');
+
   return {
-    totalUploads: history.length,
-    activeUploads: history.filter(item => item.usesLeft > 0 && item.expiresAt > now).length,
-    totalSize: history.reduce((sum, item) => sum + item.size, 0),
-    expiringSoon: history.filter(item => item.usesLeft > 0 && item.expiresAt - now < oneHour && item.expiresAt > now).length,
+    totalUploads: uploads.length,
+    activeUploads: uploads.filter(item => item.usesLeft > 0 && item.expiresAt > now).length,
+    totalSize: uploads.reduce((sum, item) => sum + (item.size || 0), 0),
+    expiringSoon: uploads.filter(item => item.usesLeft > 0 && item.expiresAt - now < oneHour && item.expiresAt > now).length,
+  };
+}
+
+/**
+ * Get download statistics
+ */
+export async function getDownloadStats(): Promise<{
+  totalDownloads: number;
+  totalSize: number;
+}> {
+  const history = await getUploadHistory();
+
+  // Filter to only downloads
+  const downloads = history.filter(item => item.activityType === 'download');
+
+  return {
+    totalDownloads: downloads.length,
+    totalSize: downloads.reduce((sum, item) => sum + (item.size || 0), 0),
   };
 }
 

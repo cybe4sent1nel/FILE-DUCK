@@ -610,7 +610,27 @@ const initiateDownload = async () => {
     downloadSuccess.value = true;
     success('✅ Download completed successfully!');
     console.log(`✅ File saved: ${fileInfo.value.filename}`);
-    
+
+    // Record download activity to local history
+    try {
+      const { addToDownloadHistory } = await import('../services/uploadHistory');
+      await addToDownloadHistory({
+        id: `download-${inputCode.value}-${Date.now()}`,
+        shareCode: inputCode.value,
+        filename: fileInfo.value.filename,
+        size: fileInfo.value.size,
+        uploadedAt: Date.now(),
+        expiresAt: fileInfo.value.expiresAt,
+        verificationCode: '',
+        maxUses: 0,
+        usesLeft: fileInfo.value.usesLeft,
+        downloadUrl: downloadUrl.value,
+      });
+      console.log('✅ Download activity recorded');
+    } catch (err) {
+      console.error('Failed to record download activity:', err);
+    }
+
     // Confirm download on backend (decrements uses and auto-deletes if needed)
     try {
       const confirmResponse = await fetch(`${import.meta.env.VITE_API_URL}/confirm-download`, {
@@ -620,14 +640,14 @@ const initiateDownload = async () => {
       });
       const confirmData = await confirmResponse.json();
       console.log('✅ Download confirmed:', confirmData);
-      
+
       // Update history uses count after confirmation
       import('../services/uploadHistory').then(({ updateUploadHistory }) => {
         updateUploadHistory(inputCode.value, {
           usesLeft: confirmData.usesLeft || 0,
         });
       });
-      
+
       // Update local uses count
       fileInfo.value.usesLeft = confirmData.usesLeft || 0;
     } catch (err) {
