@@ -50,7 +50,7 @@
             </router-link>
             <router-link to="/history" class="flex items-center text-gray-700 hover:text-purple-600 transition-all font-semibold px-3 lg:px-4 py-2 rounded-lg hover:bg-purple-50 group cursor-pointer">
               <ClockIcon class="w-5 h-5 mr-1 lg:mr-2 group-hover:scale-110 transition-transform" />
-              <span class="text-sm lg:text-base">My Uploads</span>
+              <span class="text-sm lg:text-base">My Activity</span>
             </router-link>
           </div>
         </div>
@@ -71,7 +71,7 @@
           </router-link>
           <router-link @click="mobileMenuOpen = false" to="/history" class="flex items-center text-gray-700 hover:text-purple-600 transition-all font-semibold px-4 py-3 rounded-lg hover:bg-purple-50 group">
             <ClockIcon class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
-            My Uploads
+            My Activity
           </router-link>
         </div>
       </div>
