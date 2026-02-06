@@ -20,22 +20,33 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #0f0c15;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulance type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
   color: #fffef7;
-  cursor: url('/cursor-arrow.svg') 3 3, auto;
+  cursor: url('/cursor-arrow.svg') 5 5, auto;
 }
 
-/* Custom cursors for all elements with proper hotspot coordinates */
+/* Default arrow cursor for all elements */
 * {
-  cursor: url('/cursor-arrow.svg') 3 3, auto;
+  cursor: url('/cursor-arrow.svg') 5 5, auto;
 }
 
-/* Pointer cursor for clickable elements - larger size, hotspot at tip */
+/* Hand pointer cursor for clickable elements - HIGHEST PRIORITY */
 a, button, [role="button"], [type="button"], [type="submit"], [type="reset"],
 select, .cursor-pointer, label[for], summary, [onclick], .clickable,
-input[type="checkbox"], input[type="radio"], input[type="file"] {
-  cursor: url('/cursor-pointer.svg') 4 4, pointer !important;
+input[type="checkbox"], input[type="radio"], input[type="file"],
+.router-link-active, .router-link-exact-active, a[href] {
+  cursor: url('/cursor-pointer.svg') 8 8, pointer !important;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Ensure all child elements inside buttons and links inherit pointer cursor */
+button *, [role="button"] *, [type="button"] *, [type="submit"] *, [type="reset"] *,
+a *, a[href] *, .cursor-pointer *,
+.router-link-active *, .router-link-exact-active *,
+button span, button svg, button div, button img,
+a span, a svg, a div, a img {
+  cursor: url('/cursor-pointer.svg') 8 8, pointer !important;
+  pointer-events: none;
 }
 
 /* Ensure all buttons have proper hover areas */
@@ -48,17 +59,11 @@ button, [role="button"], [type="button"], [type="submit"], [type="reset"] {
   touch-action: manipulation;
 }
 
-/* Text cursor for text elements */
-p, span, div:not([onclick]):not([role="button"]), h1, h2, h3, h4, h5, h6,
-li, td, th, label:not([for]), .text-content {
-  cursor: text;
-}
-
-/* Text cursor for text inputs */
+/* Text cursor - ONLY on text input fields */
 input[type="text"], input[type="email"], input[type="password"], input[type="search"],
 input[type="tel"], input[type="url"], input[type="number"], textarea,
 [contenteditable="true"], .cursor-text {
-  cursor: text !important;
+  cursor: url('/textcursor.svg') 16 16, text !important;
 }
 
 /* Ensure SVG icons inherit cursor from parent */
@@ -281,33 +286,34 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Additional cursor utilities */
 .cursor-pointer-custom {
-  cursor: url('/cursor-pointer.svg') 4 4, pointer !important;
+  cursor: url('/cursor-pointer.svg') 8 8, pointer !important;
 }
 
 .cursor-arrow-custom {
-  cursor: url('/cursor-arrow.svg') 3 3, auto !important;
+  cursor: url('/cursor-arrow.svg') 5 5, auto !important;
 }
 
 .cursor-text-custom {
-  cursor: text !important;
+  cursor: url('/textcursor.svg') 16 16, text !important;
 }
 
 /* Fix for router-link and clickable elements */
 .router-link-active, .router-link-exact-active, a[href] {
-  cursor: url('/cursor-pointer.svg') 4 4, pointer !important;
+  cursor: url('/cursor-pointer.svg') 8 8, pointer !important;
 }
 
 /* Ensure all interactive Vue components have proper cursor */
 [class*="hover:"]:not(p):not(span):not(div:not([onclick]):not([role="button"])) {
-  cursor: url('/cursor-pointer.svg') 4 4, pointer !important;
+  cursor: url('/cursor-pointer.svg') 8 8, pointer !important;
 }
 
 /* Button-specific cursor fixes */
 .btn-primary, .btn-secondary {
-  cursor: url('/cursor-pointer.svg') 4 4, pointer !important;
+  cursor: url('/cursor-pointer.svg') 8 8, pointer !important;
 }
 
 .btn-primary *, .btn-secondary * {
+  cursor: url('/cursor-pointer.svg') 8 8, pointer !important;
   pointer-events: none;
 }
 
@@ -315,10 +321,11 @@ h1, h2, h3, h4, h5, h6 {
 button .lottie, button img, button svg,
 [role="button"] .lottie, [role="button"] img, [role="button"] svg {
   pointer-events: none !important;
+  cursor: url('/cursor-pointer.svg') 8 8, pointer !important;
 }
 
 /* Clickable cards and containers */
 .hover\:shadow-xl, .hover\:shadow-lg, .hover\:shadow-2xl,
 [class*="hover:scale"], [class*="hover:transform"] {
-  cursor: url('/cursor-pointer.svg') 4 4, pointer !important;
+  cursor: url('/cursor-pointer.svg') 8 8, pointer !important;
 }
