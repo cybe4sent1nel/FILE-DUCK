@@ -17,6 +17,12 @@ function log(message, color = 'reset') {
 }
 
 function checkDockerRunning() {
+  // Skip check in production or CI environments (like Railway)
+  if (process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT || process.env.CI) {
+    console.log('Skipping Docker check in production/CI environment');
+    return true;
+  }
+
   try {
     execSync('docker info', { stdio: 'ignore' });
     return true;
