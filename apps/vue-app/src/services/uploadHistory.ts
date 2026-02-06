@@ -46,16 +46,8 @@ export function getUploadHistory(): UploadHistoryItem[] {
     
     const history: UploadHistoryItem[] = JSON.parse(data);
     
-    // Filter out expired items
-    const now = Date.now();
-    const validHistory = history.filter(item => item.expiresAt > now);
-    
-    // Save cleaned history if items were removed
-    if (validHistory.length !== history.length) {
-      saveUploadHistory(validHistory);
-    }
-    
-    return validHistory.sort((a, b) => b.uploadedAt - a.uploadedAt);
+    // Keep all items (including expired or exhausted) to show badges in history
+    return history.sort((a, b) => b.uploadedAt - a.uploadedAt);
   } catch (error) {
     console.error('Failed to get upload history:', error);
     return [];
@@ -161,9 +153,9 @@ export function getUploadStats(): {
   
   return {
     totalUploads: history.length,
-    activeUploads: history.filter(item => item.usesLeft > 0).length,
+    activeUploads: history.filter(item => item.usesLeft > 0 && item.expiresAt > now).length,
     totalSize: history.reduce((sum, item) => sum + item.size, 0),
-    expiringSoon: history.filter(item => item.expiresAt - now < oneHour && item.expiresAt > now).length,
+    expiringSoon: history.filter(item => item.usesLeft > 0 && item.expiresAt - now < oneHour && item.expiresAt > now).length,
   };
 }
 

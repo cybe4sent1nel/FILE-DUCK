@@ -64,8 +64,8 @@
           class="bg-white rounded-xl p-6 shadow-lg border border-purple-100 hover:shadow-xl transition-all relative"
         >
           <!-- Expired Banner -->
-          <div v-if="isExpired(item.expiresAt)" class="absolute top-0 right-0 bg-red-500 text-white px-4 py-1 rounded-bl-xl rounded-tr-xl font-bold text-sm shadow-lg">
-            ⚠️ EXPIRED
+          <div v-if="isExpiredItem(item)" class="absolute top-0 right-0 bg-red-500 text-white px-4 py-1 rounded-bl-xl rounded-tr-xl font-bold text-sm shadow-lg">
+            ⚠️ {{ getExpiryBadgeText(item) }}
           </div>
           
           <div class="flex items-center justify-between">
@@ -81,9 +81,9 @@
                   <span>•</span>
                   <span>{{ formatDate(item.uploadedAt) }}</span>
                   <span>•</span>
-                  <span :class="getExpiryClass(item.expiresAt)" class="flex items-center space-x-1">
-                    <ClockLoader v-if="!isExpired(item.expiresAt)" />
-                    <span>{{ getLiveTimeRemaining(item.expiresAt) }}</span>
+                  <span :class="getExpiryClass(item)" class="flex items-center space-x-1">
+                    <ClockLoader v-if="!isExpiredItem(item)" />
+                    <span>{{ getLiveTimeRemaining(item) }}</span>
                   </span>
                 </div>
               </div>
@@ -205,13 +205,29 @@ function formatDate(timestamp: number): string {
   return date.toLocaleDateString();
 }
 
-function isExpired(expiresAt: number): boolean {
+function isExpiredByTime(expiresAt: number): boolean {
   return expiresAt <= Date.now();
 }
 
-function getLiveTimeRemaining(expiresAt: number): string {
+function isExpiredByUses(item: UploadHistoryItem): boolean {
+  return item.usesLeft <= 0;
+}
+
+function isExpiredItem(item: UploadHistoryItem): boolean {
+  return isExpiredByTime(item.expiresAt) || isExpiredByUses(item);
+}
+
+function getExpiryBadgeText(item: UploadHistoryItem): string {
+  if (isExpiredByUses(item) && isExpiredByTime(item.expiresAt)) return 'EXPIRED';
+  if (isExpiredByUses(item)) return 'LIMIT REACHED';
+  return 'EXPIRED';
+}
+
+function getLiveTimeRemaining(item: UploadHistoryItem): string {
+  if (isExpiredByUses(item)) return 'Limit reached';
+
   const now = Date.now();
-  const remaining = expiresAt - now;
+  const remaining = item.expiresAt - now;
   
   if (remaining <= 0) return 'Expired';
   
@@ -226,8 +242,10 @@ function getLiveTimeRemaining(expiresAt: number): string {
   return `${seconds}s`;
 }
 
-function getExpiryClass(expiresAt: number): string {
-  const remaining = expiresAt - Date.now();
+function getExpiryClass(item: UploadHistoryItem): string {
+  if (isExpiredByUses(item)) return 'text-gray-400 line-through';
+
+  const remaining = item.expiresAt - Date.now();
   const oneHour = 60 * 60 * 1000;
   
   if (remaining <= 0) return 'text-gray-400 line-through';

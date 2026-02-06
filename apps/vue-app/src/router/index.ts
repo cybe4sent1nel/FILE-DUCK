@@ -65,4 +65,19 @@ const router = createRouter({
   routes,
 });
 
+// Redirect to offline page when user is offline
+router.beforeEach((to, from, next) => {
+  if (!navigator.onLine && to.path !== '/offline') {
+    return next('/offline');
+  }
+  return next();
+});
+
+// When back online, leave offline page
+window.addEventListener('online', () => {
+  if (router.currentRoute.value.path === '/offline') {
+    router.replace('/');
+  }
+});
+
 export default router;

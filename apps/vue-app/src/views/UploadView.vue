@@ -59,7 +59,7 @@
     <!-- Main Upload Card -->
     <div id="upload" class="bg-white rounded-2xl sm:rounded-3xl shadow-xl p-4 sm:p-6 md:p-10 border border-purple-100 max-w-3xl mx-auto mb-12 sm:mb-20 scroll-mt-20">
 
-      <div v-if="!shareCode" class="space-y-6">
+      <div v-if="!uploadComplete" class="space-y-6">
         <!-- File Selection with Animation -->
         <div
           @drop.prevent="handleDrop"
@@ -140,7 +140,7 @@
         </div>
 
         <!-- File Clean Message (Only after scan is clean) -->
-        <div v-else-if="scanStatus === 'clean' && !shareCode" class="bg-green-50 border-2 border-green-200 rounded-xl p-6">
+        <div v-else-if="scanStatus === 'clean' && !uploadComplete" class="bg-green-50 border-2 border-green-200 rounded-xl p-6">
           <div class="flex items-center space-x-4">
             <div class="flex-shrink-0">
               <ShieldCheckIcon class="w-12 h-12 text-green-600" />
@@ -576,6 +576,7 @@ const verificationCode = ref('');
 const isDragging = ref(false);
 const isUploading = ref(false);
 const uploadProgress = ref(0);
+const uploadComplete = ref(false);
 const shareCode = ref('');
 const expiresAt = ref(0);
 const ttlHours = ref(24);
@@ -691,6 +692,7 @@ const uploadFile = async () => {
 
   isUploading.value = true;
   uploadProgress.value = 0;
+  uploadComplete.value = false;
 
   try {
     // Request upload metadata and presigned URLs
@@ -789,7 +791,8 @@ const uploadFile = async () => {
     uploadProgress.value = 100;
     
     // Keep progress at 100% visible for a moment
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    uploadComplete.value = true;
     
     // Save to local history
     addToUploadHistory({
@@ -843,6 +846,7 @@ const resetForm = () => {
   verificationCode.value = '';
   shareCode.value = '';
   uploadProgress.value = 0;
+  uploadComplete.value = false;
   ttlHours.value = 24;
   maxUses.value = 1;
   enableEncryption.value = false;
