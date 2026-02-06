@@ -25,11 +25,6 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
         globPatterns: ['**/*.{js,css,ico,png,svg,json,txt,woff2,html}'],
         globIgnores: ['**/node_modules/**/*'],
-        // Include index.html for offline fallback
-        additionalManifestEntries: [
-          { url: '/', revision: '4' },
-          { url: '/index.html', revision: '4' },
-        ],
       },
       workbox: {
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
