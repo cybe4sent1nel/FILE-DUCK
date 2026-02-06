@@ -31,6 +31,26 @@ app.use(createPinia());
 app.use(router);
 app.mount('#app');
 
+// Helper: clear cached documents for forbidden pages
+async function clearForbiddenCachesClient() {
+  if (!('caches' in window)) return;
+  const forbiddenPages = ['/', '/index.html', 'index.html', '/download', '/privacy', '/terms'];
+  const cacheNames = await caches.keys();
+
+  for (const cacheName of cacheNames) {
+    const cache = await caches.open(cacheName);
+    const requests = await cache.keys();
+    for (const request of requests) {
+      const url = new URL(request.url);
+      const isForbidden = forbiddenPages.includes(url.pathname);
+      const isDocument = request.destination === 'document';
+      if (isForbidden || isDocument) {
+        await cache.delete(request);
+      }
+    }
+  }
+}
+
 // Register service worker
 const updateSW = registerSW({
   onNeedRefresh() {
@@ -55,6 +75,8 @@ const updateSW = registerSW({
     navigator.serviceWorker.ready.then((reg) => {
       reg.active?.postMessage({ type: 'CLEAR_FORBIDDEN_CACHES' });
     });
+
+    clearForbiddenCachesClient();
   },
   onRegisterError(error) {
     console.error('SW registration error', error);
@@ -87,3 +109,36 @@ setInterval(() => {
     window.location.replace('/offline');
   }
 }, 2000);
+
+// Connectivity check (handles cases where navigator.onLine is unreliable)
+const apiBase = import.meta.env.VITE_API_URL || '';
+
+async function checkConnectivity() {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const healthUrl = apiBase ? `${apiBase}/health` : '/api/health';
+
+    const response = await fetch(healthUrl, {
+      method: 'GET',
+      cache: 'no-store',
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`Health check failed: ${response.status}`);
+    }
+
+    if (window.location.pathname === '/offline') {
+      router.replace('/');
+    }
+  } catch {
+    if (window.location.pathname !== '/offline') {
+      window.location.replace('/offline');
+    }
+  }
+}
+
+setInterval(checkConnectivity, 5000);
