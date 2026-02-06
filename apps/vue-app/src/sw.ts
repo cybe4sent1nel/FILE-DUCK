@@ -64,38 +64,35 @@ registerRoute(
 );
 
 // Handle navigation requests with offline fallback
-// Use NetworkFirst to serve cached content when offline
-registerRoute(
-  ({ request }) => request.mode === 'navigate',
-  new NetworkFirst({
-    cacheName: 'pages',
-    plugins: [
-      new CacheableResponsePlugin({
-        statuses: [0, 200],
-      }),
-    ],
-    networkTimeoutSeconds: 3,
-  })
-);
-
-// Catch-all offline handler
 self.addEventListener('fetch', (event) => {
-  // Only handle navigation requests
+  // Only handle navigation requests (HTML pages)
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
+        .then(response => {
+          // If network succeeded, cache and return
+          if (response.ok) {
+            const cache = caches.open('pages');
+            cache.then(c => c.put(event.request, response.clone()));
+          }
+          return response;
+        })
         .catch(async () => {
-          // Network failed, try cache
-          const cache = await caches.match(event.request);
-          if (cache) return cache;
+          // Network failed - try cache
+          const cachedResponse = await caches.match(event.request);
+          if (cachedResponse) {
+            return cachedResponse;
+          }
           
-          // Fallback to cached index.html
-          const indexCache = await caches.match('/index.html') || await caches.match('/');
-          if (indexCache) return indexCache;
+          // Fallback to index.html
+          const indexResponse = await caches.match('/index.html');
+          if (indexResponse) {
+            return indexResponse;
+          }
           
-          // Last resort fallback
+          // Last resort
           return new Response(
-            '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Offline</title></head><body><h1>Offline</h1><p>Please check your connection</p></body></html>',
+            '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Offline</title></head><body style="font-family:sans-serif;text-align:center;padding:50px;"><h1>You are offline</h1><p>Please check your internet connection</p></body></html>',
             { headers: { 'Content-Type': 'text/html' } }
           );
         })
