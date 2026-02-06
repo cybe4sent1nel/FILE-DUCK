@@ -47,6 +47,7 @@ export interface StoredMetadata {
   requireCaptcha?: boolean; // If true, always require captcha for downloads
   downloadUrl?: string; // For GitHub storage
   githubReleaseId?: number; // For GitHub storage cleanup
+  githubMetadata?: any; // GitHub upload metadata (chunks, compression, etc.)
   isDeleted?: boolean; // For soft delete tracking
   deletedAt?: number; // Timestamp when deleted
 }

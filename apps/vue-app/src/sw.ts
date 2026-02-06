@@ -8,7 +8,7 @@ import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
 declare let self: ServiceWorkerGlobalScope;
 
-const PAGES_CACHE = 'pages-v1';
+const PAGES_CACHE = 'pages-v2';
 const CACHEABLE_PAGES = ['/offline', '/error', '/history'];
 
 // Claim control immediately

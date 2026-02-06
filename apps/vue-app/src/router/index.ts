@@ -73,6 +73,13 @@ router.beforeEach((to, from, next) => {
   return next();
 });
 
+// Force offline redirect when connection drops
+window.addEventListener('offline', () => {
+  if (router.currentRoute.value.path !== '/offline') {
+    router.replace('/offline');
+  }
+});
+
 // When back online, leave offline page
 window.addEventListener('online', () => {
   if (router.currentRoute.value.path === '/offline') {

@@ -73,6 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await updateMetadata(shareCode, {
           downloadUrl: result.downloadUrl,
           githubReleaseId: result.metadata.releaseId,
+          githubMetadata: result.metadata,
           scanStatus: 'clean',
         });
 
@@ -94,6 +95,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await updateMetadata(shareCode, {
           downloadUrl: result.downloadUrl,
           githubReleaseId: result.metadata.releaseId,
+          githubMetadata: result.metadata,
           scanStatus: 'clean',
         });
 
