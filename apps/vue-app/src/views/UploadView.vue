@@ -15,7 +15,7 @@
       
       <div class="flex flex-col md:flex-row items-center justify-center gap-4 sm:gap-6 mb-4 px-2">
         <img src="/logo.png" alt="FileDuck Logo" class="h-24 sm:h-32 md:h-40 w-24 sm:w-32 md:w-40 object-contain" />
-        <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold font-display tracking-tight text-indigo-950 leading-tight text-center md:text-left pb-2">
+        <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold font-display tracking-tight text-indigo-950 leading-tight text-center md:text-left">
           Share Files Securely
         </h1>
       </div>
@@ -1319,13 +1319,13 @@ select.input-field option {
 }
 
 select.input-field option:hover {
-  background-color: #f3e8ff;
-  color: #7c3aed;
+  background-color: #ecfccb;
+  color: #365314;
 }
 
 select.input-field option:checked {
-  background-color: #e9d5ff;
-  color: #7c3aed;
+  background-color: #d9f99d;
+  color: #365314;
   font-weight: 600;
 }
 </style>

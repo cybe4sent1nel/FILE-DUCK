@@ -69,12 +69,12 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   // If offline and not already on /offline, redirect to /offline
   if (!navigator.onLine && to.path !== '/offline') {
-    return next('/offline');
+    return next({ path: '/offline', replace: true });
   }
   
   // If online and on /offline, redirect to home
   if (navigator.onLine && to.path === '/offline') {
-    return next('/');
+    return next({ path: '/', replace: true });
   }
   
   next();

@@ -2,7 +2,7 @@
   <div class="py-20 my-16">
     <div class="container mx-auto px-4">
       <div class="max-w-4xl mx-auto text-center bg-white rounded-3xl shadow-xl p-12 border border-purple-100">
-        <h2 class="text-5xl md:text-6xl font-bold font-display tracking-tight mb-6 text-slate-900 pb-2">
+        <h2 class="text-4xl md:text-5xl lg:text-6xl font-extrabold font-display tracking-tight mb-6 text-slate-900">
           Ready to Share Files Securely?
         </h2>
         <p class="text-xl md:text-2xl text-gray-600 mb-10 font-light">

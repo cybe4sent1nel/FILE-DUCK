@@ -1,7 +1,7 @@
 <template>
   <div class="py-20 my-16">
     <div class="container mx-auto px-4">
-      <h2 class="text-5xl font-bold font-display tracking-tight text-center mb-4 text-teal-900 pb-2">
+      <h2 class="text-4xl md:text-5xl font-extrabold font-display tracking-tight text-center mb-4 text-teal-900">
         How FileDuck Works
       </h2>
       <p class="text-center text-gray-600 mb-16 text-lg font-sans">

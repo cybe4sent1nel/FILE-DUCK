@@ -14,7 +14,7 @@
 
         <!-- Right: Content -->
         <div>
-          <h2 class="text-5xl font-bold font-display tracking-tight mb-6 text-purple-950 pb-2">
+          <h2 class="text-4xl md:text-5xl font-extrabold font-display tracking-tight mb-6 text-purple-950">
             About FileDuck
           </h2>
           <p class="text-xl text-gray-700 mb-6 leading-relaxed">

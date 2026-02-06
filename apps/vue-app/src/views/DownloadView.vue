@@ -3,7 +3,7 @@
     <div class="bg-white/80 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 border-2 border-yellow-100">
       <div class="flex flex-col sm:flex-row items-center justify-center mb-6 sm:mb-8 gap-3 sm:gap-0">
         <img src="/logo.png" alt="FileDuck" class="h-12 sm:h-16 w-12 sm:w-16 sm:mr-4 transform hover:rotate-12 transition-transform" />
-        <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold font-display tracking-tight text-center text-fuchsia-900 pb-1">
+        <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold font-display tracking-tight text-center text-fuchsia-900">
           Download File
         </h1>
       </div>
@@ -30,7 +30,7 @@
             v-model="inputCode"
             type="text"
             placeholder="e.g., aBc123XyZ9"
-            class="input-field text-center text-xl sm:text-2xl md:text-3xl font-mono uppercase tracking-wider"
+            class="input-field text-center text-xl sm:text-2xl md:text-3xl font-mono uppercase tracking-wider bg-white text-gray-900 placeholder-gray-400 caret-purple-600 focus:caret-purple-700"
             @keyup.enter="redeemCode"
             maxlength="10"
           />
