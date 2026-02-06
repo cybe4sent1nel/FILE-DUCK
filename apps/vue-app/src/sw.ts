@@ -66,13 +66,28 @@ registerRoute(
 // Handle navigation requests with the App Shell (index.html)
 // This ensures that for any path (/history, /, /offline), index.html is served
 // and the client-side router handles the logic.
-// Use cache-first to ensure offline page works properly
 const handler = createHandlerBoundToURL('/index.html');
 const navigationRoute = new NavigationRoute(handler, {
   denylist: [/^\/api/], // Don't handle API routes
 });
 
 registerRoute(navigationRoute);
+
+// Catch-all offline fallback for navigation requests
+self.addEventListener('fetch', (event) => {
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        // If network fails, serve cached index.html which will show offline page via router
+        return caches.match('/index.html').then((response) => {
+          return response || new Response('Offline - Please check your connection', {
+            headers: { 'Content-Type': 'text/html' }
+          });
+        });
+      })
+    );
+  }
+});
 
 // Listen for messages from the client
 self.addEventListener('message', (event) => {

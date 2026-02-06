@@ -197,6 +197,24 @@ onMounted(() => {
   if (adsInitialized) return;
   adsInitialized = true;
 
+  // Handle online/offline status
+  const handleOnline = () => {
+    console.log('Back online');
+    if (router.currentRoute.value.path === '/offline') {
+      router.push('/');
+    }
+  };
+
+  const handleOffline = () => {
+    console.log('Went offline');
+    if (router.currentRoute.value.path !== '/offline') {
+      router.push('/offline');
+    }
+  };
+
+  window.addEventListener('online', handleOnline);
+  window.addEventListener('offline', handleOffline);
+
   try {
     // Wait for AdSense script to load
     setTimeout(() => {
