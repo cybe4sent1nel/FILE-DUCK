@@ -49,7 +49,7 @@ registerRoute(
   })
 );
 
-// Network First strategy for API calls
+// Network First strategy for API calls (with fallback to cache)
 registerRoute(
   /\/api\/.*/,
   new NetworkFirst({
@@ -63,42 +63,45 @@ registerRoute(
   })
 );
 
-// Handle navigation requests with offline fallback
-self.addEventListener('fetch', (event) => {
-  // Only handle navigation requests (HTML pages)
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request)
-        .then(response => {
-          // If network succeeded, cache and return
-          if (response.ok) {
-            const cache = caches.open('pages');
-            cache.then(c => c.put(event.request, response.clone()));
-          }
-          return response;
-        })
-        .catch(async () => {
-          // Network failed - try cache
-          const cachedResponse = await caches.match(event.request);
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          
-          // Fallback to index.html
-          const indexResponse = await caches.match('/index.html');
-          if (indexResponse) {
-            return indexResponse;
-          }
-          
-          // Last resort
-          return new Response(
-            '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Offline</title></head><body style="font-family:sans-serif;text-align:center;padding:50px;"><h1>You are offline</h1><p>Please check your internet connection</p></body></html>',
-            { headers: { 'Content-Type': 'text/html' } }
-          );
-        })
-    );
-  }
-});
+// Cache-first strategy for all other same-origin requests (JS, CSS, etc.)
+registerRoute(
+  ({ url, request }) => url.origin === self.location.origin && !url.pathname.startsWith('/api'),
+  new CacheFirst({
+    cacheName: 'runtime-cache-v1',
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 100,
+        maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+      }),
+      new CacheableResponsePlugin({
+        statuses: [0, 200],
+      }),
+    ],
+  })
+);
+
+// Handle navigation requests - use precached index.html
+try {
+  const navigationHandler = createHandlerBoundToURL('/index.html');
+  const navigationRoute = new NavigationRoute(navigationHandler, {
+    denylist: [/^\/api\//], // Don't use this handler for API routes
+  });
+  registerRoute(navigationRoute);
+} catch (error) {
+  console.warn('Failed to create navigation route, using fallback:', error);
+  // Fallback navigation handling
+  registerRoute(
+    ({ request }) => request.mode === 'navigate',
+    new NetworkFirst({
+      cacheName: 'pages-cache',
+      plugins: [
+        new CacheableResponsePlugin({
+          statuses: [0, 200],
+        }),
+      ],
+    })
+  );
+}
 
 // Listen for messages from the client
 self.addEventListener('message', (event) => {
