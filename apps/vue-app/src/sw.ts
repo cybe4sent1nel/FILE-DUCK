@@ -80,28 +80,13 @@ registerRoute(
   })
 );
 
-// Handle navigation requests - use precached index.html
-try {
-  const navigationHandler = createHandlerBoundToURL('/index.html');
-  const navigationRoute = new NavigationRoute(navigationHandler, {
-    denylist: [/^\/api\//], // Don't use this handler for API routes
-  });
-  registerRoute(navigationRoute);
-} catch (error) {
-  console.warn('Failed to create navigation route, using fallback:', error);
-  // Fallback navigation handling
-  registerRoute(
-    ({ request }) => request.mode === 'navigate',
-    new NetworkFirst({
-      cacheName: 'pages-cache',
-      plugins: [
-        new CacheableResponsePlugin({
-          statuses: [0, 200],
-        }),
-      ],
-    })
-  );
-}
+// Handle navigation requests - use precached index.html for all routes (including /offline)
+// This ensures the Vue Router can take over and handle client-side routing
+const navigationHandler = createHandlerBoundToURL('/index.html');
+const navigationRoute = new NavigationRoute(navigationHandler, {
+  denylist: [/^\/api\//], // Don't use this handler for API routes
+});
+registerRoute(navigationRoute);
 
 // Listen for messages from the client
 self.addEventListener('message', (event) => {
