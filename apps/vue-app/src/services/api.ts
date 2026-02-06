@@ -157,11 +157,6 @@ export async function redeemShareCode(request: RedeemRequest): Promise<RedeemRes
   return response.data;
 }
 
-export async function scanBeforeDownload(shareCode: string): Promise<any> {
-  const response = await api.post('/scan-before-download', { shareCode });
-  return response.data;
-}
-
 export async function scanBeforeDownload(shareCode: string): Promise<{ decision: 'clean' | 'infected' | 'suspicious' | 'skipped' }> {
   const response = await api.post('/scan-before-download', { shareCode });
   return response.data;
