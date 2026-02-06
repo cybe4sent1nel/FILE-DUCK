@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./logo.png" alt="FileDuck Logo" width="120" />
+<img src="./apps/vue-app/public/logo.png" alt="FileDuck Logo" width="120" />
 
 # FileDuck - Secure Global File Sharing
 
