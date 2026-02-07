@@ -65,14 +65,17 @@
             </div>
             <div class="flex gap-2">
               <button
+                type="button"
                 @click="syncUploadMetadata"
-                class="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
+                :disabled="isSyncing"
+                class="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-semibold transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Refresh status from server"
               >
-                <RefreshCwIcon class="w-4 h-4" />
-                <span>Refresh</span>
+                <RefreshCwIcon class="w-4 h-4" :class="{ 'animate-spin': isSyncing }" />
+                <span>{{ isSyncing ? 'Syncing...' : 'Refresh' }}</span>
               </button>
               <button
+                type="button"
                 @click="confirmClearUploads"
                 class="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
               >
@@ -288,9 +291,9 @@ const downloads = computed(() => history.value.filter(item => item.activityType 
 let countdownInterval: NodeJS.Timeout;
 let syncInterval: NodeJS.Timeout;
 
-onMounted(() => {
-  loadHistory();
-  syncUploadMetadata();
+onMounted(async () => {
+  await loadHistory();
+  await syncUploadMetadata();
 
   // Update countdown every second
   countdownInterval = setInterval(() => {
@@ -337,11 +340,15 @@ async function syncUploadMetadata() {
   isSyncing.value = true;
   const uploadItems = uploads.value;
 
+  console.log(`🔄 Syncing ${uploadItems.length} upload(s)...`);
+
   // Sync ALL uploads to ensure badges show correctly
   // Don't filter by expiration - we need to sync even expired files
   for (const item of uploadItems) {
     try {
       const metadata = await getFileMetadata(item.shareCode);
+
+      console.log(`✓ Synced ${item.shareCode}: usesLeft=${metadata.usesLeft}, maxUses=${metadata.maxUses}, expires=${new Date(metadata.expiresAt).toLocaleString()}`);
 
       // Update local storage with server data
       await updateUploadHistory(item.shareCode, {
@@ -352,24 +359,34 @@ async function syncUploadMetadata() {
     } catch (error: any) {
       // If file not found (404), it means it was deleted or expired on server
       if (error.response?.status === 404) {
+        console.log(`⚠️ File ${item.shareCode} not found on server - marking as expired`);
         // Mark as expired in local storage
         await updateUploadHistory(item.shareCode, {
           usesLeft: 0,
         });
+      } else {
+        // Silently fail for other errors (like network issues)
+        console.log(`⚠️ Sync skipped for ${item.shareCode}:`, error.message);
       }
-      // Silently fail for other errors (like network issues)
-      console.log(`Sync skipped for ${item.shareCode}:`, error.message);
     }
   }
 
   // Reload history after sync to update UI
   await loadHistory();
+  console.log(`✓ History reloaded, checking badge status...`);
+
+  // Log badge status for debugging
+  uploads.value.forEach(item => {
+    const expired = isExpiredItem(item);
+    const byTime = isExpiredByTime(item.expiresAt);
+    const byUses = isExpiredByUses(item);
+    console.log(`📊 ${item.shareCode}: expired=${expired}, byTime=${byTime}, byUses=${byUses}, usesLeft=${item.usesLeft}`);
+  });
+
   isSyncing.value = false;
 
-  // Show success notification
-  if (uploadItems.length > 0) {
-    success(`✓ Refreshed ${uploadItems.length} file${uploadItems.length !== 1 ? 's' : ''}`);
-  }
+  // Force reactivity update
+  history.value = [...history.value];
 }
 
 function formatSize(bytes: number): string {
