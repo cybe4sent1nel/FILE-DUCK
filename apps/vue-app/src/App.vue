@@ -3,17 +3,18 @@
     <!-- Notification Container -->
     <NotificationContainer />
 
-    <!-- Falling Icons Background -->
-    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    <!-- Falling Icons Background - Hide on error pages -->
+    <div v-if="!isErrorPage" class="fixed inset-0 pointer-events-none overflow-hidden z-0">
       <div v-for="i in 15" :key="i" class="falling-icon" :style="getFallingIconStyle(i)">
         <component :is="getRandomIcon(i)" class="w-6 h-6 opacity-20" :class="getIconColor(i)" />
       </div>
     </div>
 
-    <!-- Particle Background -->
-    <ParticleBackground />
-    
-    <nav class="bg-white/95 backdrop-blur-md shadow-2xl border-b-2 border-purple-200 sticky top-0 z-50">
+    <!-- Particle Background - Hide on error pages -->
+    <ParticleBackground v-if="!isErrorPage" />
+
+    <!-- Only show navbar if NOT on error pages -->
+    <nav v-if="!isErrorPage" class="bg-white/95 backdrop-blur-md shadow-2xl border-b-2 border-purple-200 sticky top-0 z-50">
       <div class="container mx-auto px-4 py-3">
         <div class="flex items-center justify-between gap-4">
           <router-link to="/" class="flex items-center space-x-2 sm:space-x-3 group flex-shrink-0">
@@ -93,7 +94,8 @@
       </div>
     </nav>
 
-    <main class="container mx-auto px-4 relative z-10">
+    <!-- Regular page content - Hide wrapper on error pages -->
+    <main v-if="!isErrorPage" class="container mx-auto px-4 relative z-10">
       <!-- AdSense Display Ad (Responsive) - Only show if ads loaded -->
       <div v-if="adsLoaded" class="max-w-4xl mx-auto mb-2">
         <ins class="adsbygoogle"
@@ -117,7 +119,10 @@
       </div>
     </main>
 
-    <footer class="bg-cream-50 mt-16 border-t-2 border-purple-200">
+    <!-- Error pages without wrapper -->
+    <router-view v-if="isErrorPage" />
+
+    <footer v-if="!isErrorPage" class="bg-cream-50 mt-16 border-t-2 border-purple-200">
       <div class="container mx-auto px-4 py-12">
         <!-- Main Footer Content -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
@@ -235,16 +240,23 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { onMounted, ref, computed } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { UploadIcon, DownloadIcon, ClockIcon, ShieldCheckIcon, ZapIcon, FileIcon, FolderIcon, FileTextIcon, ImageIcon, FileCodeIcon, HomeIcon, BookOpenIcon, HelpCircleIcon, MailIcon, LockIcon, GithubIcon } from 'lucide-vue-next';
 import ParticleBackground from './components/ParticleBackground.vue';
 import NotificationContainer from './components/NotificationContainer.vue';
 
 const router = useRouter();
+const route = useRoute();
 
 const adsLoaded = ref(false);
 const mobileMenuOpen = ref(false);
+
+// Check if current page is an error page
+const isErrorPage = computed(() => {
+  const path = route.path;
+  return path === '/offline' || path === '/404' || path === '/error' || route.name === 'NotFound';
+});
 
 const icons = [FileIcon, FolderIcon, FileTextIcon, ImageIcon, FileCodeIcon, ShieldCheckIcon, ZapIcon];
 
@@ -278,9 +290,14 @@ onMounted(() => {
 
   // Handle online/offline status
   const handleOnline = () => {
-    console.log('Back online');
+    console.log('Back online - reloading to get fresh content');
+    // Force reload to get fresh content when coming back online
     if (router.currentRoute.value.path === '/offline') {
-      router.push('/');
+      // Redirect to home and force reload
+      window.location.href = '/';
+    } else {
+      // Just reload the current page to get fresh content
+      window.location.reload();
     }
   };
 
@@ -301,6 +318,34 @@ onMounted(() => {
 
   window.addEventListener('online', handleOnline);
   window.addEventListener('offline', handleOffline);
+
+  // Service Worker update handling
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then((registration) => {
+      // Check for updates periodically
+      setInterval(() => {
+        registration.update();
+      }, 60000); // Check every minute
+
+      // Listen for updates
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New service worker available, prompt user to reload
+              console.log('New content available! Please refresh.');
+              // Auto-reload after 2 seconds to get new content
+              setTimeout(() => {
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
+                window.location.reload();
+              }, 2000);
+            }
+          });
+        }
+      });
+    });
+  }
 
   try {
     // Wait for AdSense script to load
