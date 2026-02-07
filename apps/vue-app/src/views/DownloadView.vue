@@ -565,15 +565,13 @@ const initiateDownload = async () => {
   try {
     downloadProgress.value = 0;
     success('📥 Download started! Please wait...');
-    
-    // Use proxy for GitHub URLs to avoid CORS issues
-    const isGitHubUrl = downloadUrl.value.includes('github.com');
-    const fetchUrl = isGitHubUrl 
-      ? `${import.meta.env.VITE_API_URL}/proxy-download?code=${inputCode.value}`
-      : downloadUrl.value;
-    
+
+    // Always use direct download URL (no proxy)
+    // GitHub/S3/CDN URLs are already configured with CORS
+    const fetchUrl = downloadUrl.value;
+
     console.log(`📥 Fetching from: ${fetchUrl}`);
-    
+
     // Fetch with progress tracking
     const response = await fetch(fetchUrl);
     if (!response.ok) {
@@ -581,13 +579,13 @@ const initiateDownload = async () => {
       console.error('Download failed:', response.status, errorText);
       throw new Error(`Download failed: ${response.status}`);
     }
-    
+
     const reader = response.body?.getReader();
     const contentLength = +(response.headers.get('Content-Length') || fileInfo.value.size);
 
     let receivedLength = 0;
     const chunks = [];
-    
+
     console.log(`📥 Downloading file: ${fileInfo.value.filename} (${contentLength} bytes)`);
 
     if (reader) {

@@ -227,7 +227,8 @@
                   ⚠️
                   <span v-if="scanSkipReason === 'too_large'">File Too Large for Scanning</span>
                   <span v-else-if="scanSkipReason === 'scanner_unavailable'">Scanner Temporarily Unavailable</span>
-                  <span v-else>Large File - Scanning Disabled by Default</span>
+                  <span v-else-if="selectedFile && selectedFile.size > 50 * 1024 * 1024">Large File - Scanning Disabled by Default</span>
+                  <span v-else>Scanning Disabled</span>
                 </p>
               </div>
               <p class="text-yellow-700 font-medium mb-2">
@@ -237,15 +238,21 @@
                 <span v-else-if="scanSkipReason === 'scanner_unavailable'">
                   Our large-file scanner is currently unavailable.
                 </span>
-                <span v-else>
+                <span v-else-if="selectedFile && selectedFile.size > 50 * 1024 * 1024">
                   Large files (&gt;50MB) have scanning disabled by default to reduce delays.
+                </span>
+                <span v-else>
+                  You have disabled malware scanning for this file.
                 </span>
               </p>
               <p class="text-sm text-yellow-600 mb-3">
                 The file will be uploaded <strong>without malware scanning</strong>. Recipients will be warned that this file was not scanned.
               </p>
-              <p class="text-xs text-yellow-600">
+              <p class="text-xs text-yellow-600" v-if="selectedFile && selectedFile.size > 50 * 1024 * 1024">
                 💡 <strong>Tip:</strong> Enable scanning toggle above to scan files before upload. Large files may take longer to scan.
+              </p>
+              <p class="text-xs text-yellow-600" v-else>
+                💡 <strong>Tip:</strong> Enable the scanning toggle above to scan this file for malware before upload.
               </p>
             </div>
           </div>
@@ -339,7 +346,7 @@
           </div>
 
           <!-- Captcha Toggle -->
-          <CaptchaToggle v-model="requireCaptcha" />
+          <CaptchaToggle v-model="requireCaptcha" :isAutoEnabled="isCaptchaAutoEnabled" />
 
           <!-- Scan Toggle -->
           <ScanToggle v-model="enableScan" />
@@ -677,7 +684,8 @@ const virusDetails = ref('');
 const scanSkipReason = ref<'too_large' | 'user_disabled' | 'scanner_unavailable' | ''>('');
 const allowQuarantine = ref(false);
 const requireCaptcha = ref(false);
-const enableScan = ref(false); // Scanning OFF by default
+const enableScan = ref(true); // Scanning ON by default for small files
+const isCaptchaAutoEnabled = ref(false); // Track if captcha was auto-enabled
 
 // Pause/Resume state
 const isPaused = ref(false);
@@ -687,11 +695,50 @@ let uploadAbortController: AbortController | null = null;
 let lastProgressTime = Date.now();
 let lastProgressBytes = 0;
 
-// Watch file size changes - keep user's choice
+// Watch file size changes to auto-enable/disable scanning and captcha
 watch(selectedFile, (file) => {
   if (file) {
-    // Don't auto-change user's scanning preference
-    // User must explicitly enable or disable scanning
+    // Auto-enable scanning for files ≤50MB
+    // For files >50MB, user must manually enable
+    if (file.size <= 50 * 1024 * 1024) {
+      enableScan.value = true;
+    } else {
+      enableScan.value = false;
+    }
+
+    // Auto-enable CAPTCHA for files >50MB (for bot protection)
+    // User can still disable it if they want
+    if (file.size > 50 * 1024 * 1024) {
+      requireCaptcha.value = true;
+      isCaptchaAutoEnabled.value = true;
+    } else {
+      // Don't auto-disable if user manually enabled it for small files
+      if (isCaptchaAutoEnabled.value) {
+        requireCaptcha.value = false;
+        isCaptchaAutoEnabled.value = false;
+      }
+    }
+  }
+});
+
+// Watch enableScan toggle - trigger scan when manually enabled for large files
+watch(enableScan, async (newValue, oldValue) => {
+  // Only trigger scan if:
+  // 1. Toggle changed from false to true (user manually enabled)
+  // 2. File is selected
+  // 3. File hasn't been scanned yet or was previously skipped
+  if (newValue && !oldValue && selectedFile.value && sha256Hash.value) {
+    if (scanStatus.value === 'skipped' || scanStatus.value === null) {
+      await performScan();
+    }
+  }
+});
+
+// Watch requireCaptcha toggle - clear auto-enabled flag when user manually changes it
+watch(requireCaptcha, (newValue, oldValue) => {
+  // If user manually disables an auto-enabled captcha, clear the auto-enabled flag
+  if (!newValue && isCaptchaAutoEnabled.value) {
+    isCaptchaAutoEnabled.value = false;
   }
 });
 
@@ -715,6 +762,72 @@ const handleDrop = async (event: DragEvent) => {
   isDragging.value = false;
   if (event.dataTransfer?.files && event.dataTransfer.files[0]) {
     await processFile(event.dataTransfer.files[0]);
+  }
+};
+
+// Perform malware scan on the currently selected file
+const performScan = async () => {
+  if (!selectedFile.value || !sha256Hash.value) return;
+
+  // Reset scan state
+  scanStatus.value = 'pending';
+  virusDetails.value = '';
+  scanSkipReason.value = '';
+  isScanning.value = true;
+
+  try {
+    // Call actual scan API and ensure minimum scanning duration for UX
+    const [scanResult] = await Promise.all([
+      scanFileBeforeUpload(selectedFile.value, sha256Hash.value),
+      new Promise(resolve => setTimeout(resolve, 2000)) // Minimum 2s scanning animation
+    ]);
+
+    if (scanResult.decision === 'infected' || scanResult.decision === 'suspicious') {
+      scanStatus.value = 'malicious';
+
+      // Build detailed virus information
+      const virusName = scanResult.clamav?.virus || 'Unknown threat';
+      const vtInfo = scanResult.virustotal
+        ? ` (${scanResult.virustotal.positives}/${scanResult.virustotal.total} engines detected threats)`
+        : '';
+
+      virusDetails.value = scanResult.clamav?.infected
+        ? `Virus Detected: ${virusName}${vtInfo}`
+        : `Suspicious File: Security scan flagged this file${vtInfo}`;
+    } else {
+      scanStatus.value = 'clean';
+    }
+    isScanning.value = false;
+  } catch (scanError: any) {
+    console.error('Scan failed:', scanError);
+    isScanning.value = false;
+
+    // Handle different scan failure scenarios
+    if (scanError.response?.status === 413 || scanError.message?.includes('too large') || scanError.message?.includes('payload')) {
+      // File too large for scanning
+      console.warn('File too large for scanning');
+      scanStatus.value = 'malicious';
+      virusDetails.value = 'Scan error: This file is too large to scan. Our scanner cannot process files of this size.';
+    } else if (scanError.response?.status === 503 && scanError.response?.data?.code === 'SCANNER_UNAVAILABLE') {
+      // Scanner service unavailable
+      console.warn('Scanner unavailable, skipping scan');
+      scanStatus.value = 'skipped';
+      scanSkipReason.value = 'scanner_unavailable';
+    } else if (scanError.code === 'ERR_NETWORK' || scanError.message?.includes('Network Error')) {
+      // Network error
+      console.warn('Scanner service unavailable, proceeding without scan');
+      scanStatus.value = 'skipped';
+      scanSkipReason.value = 'scanner_unavailable';
+    } else if (scanError.response?.status === 504 || scanError.code === 'ECONNABORTED') {
+      // Timeout - likely too large
+      console.warn('Scan timeout - file too large');
+      scanStatus.value = 'malicious';
+      virusDetails.value = 'Scan error: Scanning timed out. The file is too large to scan.';
+    } else {
+      // Other scan errors
+      scanStatus.value = 'malicious';
+      virusDetails.value = `Scan error: ${scanError.response?.data?.message || scanError.message || 'Unable to scan file. Please try again.'}`;
+    }
   }
 };
 
@@ -755,63 +868,7 @@ const processFile = async (file: File) => {
     // Start pre-upload scan (uses appropriate scanner based on file size)
     // Files ≤32MB use fast API-based scanning
     // Files >32MB use ClamAV scanner
-    isScanning.value = true;
-    scanStatus.value = 'pending';
-
-    try {
-      // Call actual scan API and ensure minimum scanning duration for UX
-      const [scanResult] = await Promise.all([
-        scanFileBeforeUpload(file, hash),
-        new Promise(resolve => setTimeout(resolve, 2000)) // Minimum 2s scanning animation
-      ]);
-      
-      if (scanResult.decision === 'infected' || scanResult.decision === 'suspicious') {
-        scanStatus.value = 'malicious';
-        
-        // Build detailed virus information
-        const virusName = scanResult.clamav?.virus || 'Unknown threat';
-        const vtInfo = scanResult.virustotal 
-          ? ` (${scanResult.virustotal.positives}/${scanResult.virustotal.total} engines detected threats)`
-          : '';
-        
-        virusDetails.value = scanResult.clamav?.infected
-          ? `Virus Detected: ${virusName}${vtInfo}`
-          : `Suspicious File: Security scan flagged this file${vtInfo}`;
-      } else {
-        scanStatus.value = 'clean';
-      }
-      isScanning.value = false;
-    } catch (scanError: any) {
-      console.error('Scan failed:', scanError);
-      isScanning.value = false;
-
-      // Handle different scan failure scenarios
-      if (scanError.response?.status === 413 || scanError.message?.includes('too large') || scanError.message?.includes('payload')) {
-        // File too large for scanning
-        console.warn('File too large for scanning');
-        scanStatus.value = 'malicious';
-        virusDetails.value = 'Scan error: This file is too large to scan. Our scanner cannot process files of this size.';
-      } else if (scanError.response?.status === 503 && scanError.response?.data?.code === 'SCANNER_UNAVAILABLE') {
-        // Scanner service unavailable
-        console.warn('Scanner unavailable, skipping scan');
-        scanStatus.value = 'skipped';
-        scanSkipReason.value = 'scanner_unavailable';
-      } else if (scanError.code === 'ERR_NETWORK' || scanError.message?.includes('Network Error')) {
-        // Network error
-        console.warn('Scanner service unavailable, proceeding without scan');
-        scanStatus.value = 'skipped';
-        scanSkipReason.value = 'scanner_unavailable';
-      } else if (scanError.response?.status === 504 || scanError.code === 'ECONNABORTED') {
-        // Timeout - likely too large
-        console.warn('Scan timeout - file too large');
-        scanStatus.value = 'malicious';
-        virusDetails.value = 'Scan error: Scanning timed out. The file is too large to scan.';
-      } else {
-        // Other scan errors
-        scanStatus.value = 'malicious';
-        virusDetails.value = `Scan error: ${scanError.response?.data?.message || scanError.message || 'Unable to scan file. Please try again.'}`;
-      }
-    }
+    await performScan();
   } catch (err) {
     console.error('Failed to process file:', err);
     isScanning.value = false;

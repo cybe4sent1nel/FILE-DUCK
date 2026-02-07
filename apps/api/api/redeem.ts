@@ -63,17 +63,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Smart Hybrid CAPTCHA Logic (skip in development)
     if (IS_PRODUCTION) {
-      // Check if captcha is required BEFORE incrementing failed attempts
-      // This prevents false positives from the first legitimate request
-      const captchaRequired = 
-        metadata.requireCaptcha || // Uploader opted-in for captcha protection
-        metadata.size > 50 * 1024 * 1024; // Large files (>50MB)
-      
+      // Captcha is required when:
+      // 1. User enabled the captcha toggle (requireCaptcha = true)
+      // 2. AND file is >50MB (auto-enabled for large files)
+      // User can disable the toggle even for large files to skip captcha
+      const captchaRequired =
+        metadata.requireCaptcha && // User has captcha toggle enabled
+        metadata.size > 50 * 1024 * 1024; // Large files >50MB
+
       if (captchaRequired && !captchaToken) {
         return res.status(403).json({
           error: 'CAPTCHA verification required',
           code: 'CAPTCHA_REQUIRED',
-          reason: metadata.requireCaptcha ? 'uploader_required' : 'large_file',
+          reason: 'large_file_protection',
         });
       }
 
@@ -82,9 +84,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const isValid = await verifyCaptcha(captchaToken);
         if (!isValid) {
           await trackFailedAttempt(ip); // Only increment on invalid captcha
-          return res.status(403).json({ 
-            error: 'Invalid CAPTCHA', 
-            code: 'CAPTCHA_INVALID' 
+          return res.status(403).json({
+            error: 'Invalid CAPTCHA',
+            code: 'CAPTCHA_INVALID'
           });
         }
       }

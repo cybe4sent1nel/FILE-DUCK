@@ -8,8 +8,8 @@
         Enable malware scanning
       </label>
       <p class="text-xs text-gray-500 mt-1">
-        <span v-if="modelValue">File will be scanned for threats before upload</span>
-        <span v-else>⚠️ Scanning disabled - File will not be checked for malware</span>
+        <span v-if="modelValue">Scanning enabled - File will be checked for threats</span>
+        <span v-else>⚠️ Scanning disabled - Enable to scan for malware</span>
       </p>
     </div>
     <label class="switch">

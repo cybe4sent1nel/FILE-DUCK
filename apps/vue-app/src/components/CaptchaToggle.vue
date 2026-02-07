@@ -6,14 +6,25 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
         </svg>
         Require CAPTCHA for downloads
+        <span v-if="isAutoEnabled" class="ml-2 px-2 py-0.5 text-xs font-semibold text-green-700 bg-green-100 rounded-full">Auto-Enabled</span>
       </label>
-      <p class="text-xs text-gray-500 mt-1">Add extra security for sensitive files</p>
+      <p class="text-xs text-gray-500 mt-1">
+        <span v-if="isAutoEnabled">
+          🛡️ CAPTCHA automatically enabled for files larger than 50MB for security. You can disable if needed.
+        </span>
+        <span v-else-if="modelValue">
+          CAPTCHA enabled - Recipients must verify before download
+        </span>
+        <span v-else>
+          Add extra security for sensitive files
+        </span>
+      </p>
     </div>
     <label class="relative inline-flex items-center cursor-pointer">
-      <input 
-        type="checkbox" 
-        :checked="modelValue" 
-        @change="$emit('update:modelValue', $event.target.checked)" 
+      <input
+        type="checkbox"
+        :checked="modelValue"
+        @change="$emit('update:modelValue', $event.target.checked)"
         class="sr-only peer"
       >
       <div class="group peer ring-0 bg-rose-400 rounded-full outline-none duration-300 after:duration-300 w-16 h-8 shadow-md peer-checked:bg-emerald-500 peer-focus:outline-none after:content-[''] after:rounded-full after:absolute after:bg-gray-50 after:outline-none after:h-6 after:w-6 after:top-1 after:left-1 after:flex after:justify-center after:items-center peer-checked:after:translate-x-8 peer-hover:after:scale-95">
@@ -30,7 +41,11 @@
 
 <script setup>
 defineProps({
-  modelValue: Boolean
+  modelValue: Boolean,
+  isAutoEnabled: {
+    type: Boolean,
+    default: false
+  }
 });
 
 defineEmits(['update:modelValue']);
