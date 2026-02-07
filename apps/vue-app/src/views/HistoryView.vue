@@ -4,8 +4,8 @@
       <!-- Header -->
       <div class="text-center mb-12">
         <h1 class="text-5xl font-bold mb-4 flex items-center justify-center gap-3">
-          <ActivityIcon class="w-12 h-12 text-blue-600" />
-          <span class="bg-gradient-to-r from-purple-400 to-lemon-400 bg-clip-text text-transparent">My Activity</span>
+          <ActivityIcon class="w-12 h-12 text-purple-600" />
+          <span class="text-indigo-950 font-display tracking-tight">My Activity</span>
         </h1>
         <p class="text-xl text-gray-600">
           Track your uploads and downloads - No sign-in required!
@@ -89,9 +89,16 @@
               :key="item.shareCode"
               class="bg-gradient-to-r from-purple-50 to-white rounded-xl p-6 shadow-md border border-purple-100 hover:shadow-lg transition-all relative"
             >
-              <!-- Expired Banner -->
-              <div v-if="isExpiredItem(item)" class="absolute top-0 right-0 bg-red-500 text-white px-4 py-1 rounded-bl-xl rounded-tr-xl font-bold text-sm shadow-lg">
-                ⚠️ {{ getExpiryBadgeText(item) }}
+              <!-- Expired/Limit Badges -->
+              <div v-if="isExpiredItem(item)" class="absolute top-0 right-0 flex">
+                <span v-if="isExpiredByUses(item)" class="bg-orange-500 text-white px-4 py-1 rounded-bl-xl font-bold text-sm shadow-lg flex items-center gap-2" :class="{'rounded-tr-xl': !isExpiredByTime(item.expiresAt)}">
+                  <img src="/perimeter-limit-svgrepo-com.svg" alt="Limit" class="w-4 h-4 inline-block" />
+                  LIMIT REACHED
+                </span>
+                <span v-if="isExpiredByTime(item.expiresAt)" class="bg-red-500 text-white px-4 py-1 font-bold text-sm shadow-lg flex items-center gap-2" :class="{'rounded-bl-xl': !isExpiredByUses(item), 'rounded-tr-xl': true}">
+                  <img src="/expired-svgrepo-com.svg" alt="Expired" class="w-4 h-4 inline-block" />
+                  EXPIRED
+                </span>
               </div>
 
               <div class="flex items-center justify-between">
@@ -175,8 +182,20 @@
             <div
               v-for="item in downloads"
               :key="item.shareCode + '-download'"
-              class="bg-gradient-to-r from-teal-50 to-white rounded-xl p-6 shadow-md border border-teal-100 hover:shadow-lg transition-all"
+              class="bg-gradient-to-r from-teal-50 to-white rounded-xl p-6 shadow-md border border-teal-100 hover:shadow-lg transition-all relative"
             >
+              <!-- Expired/Limit Badges for downloads -->
+              <div v-if="item.expiresAt && isExpiredItem(item)" class="absolute top-0 right-0 flex">
+                <span v-if="isExpiredByUses(item)" class="bg-orange-500 text-white px-4 py-1 rounded-bl-xl font-bold text-sm shadow-lg flex items-center gap-2" :class="{'rounded-tr-xl': !isExpiredByTime(item.expiresAt)}">
+                  <img src="/perimeter-limit-svgrepo-com.svg" alt="Limit" class="w-4 h-4 inline-block" />
+                  LIMIT REACHED
+                </span>
+                <span v-if="isExpiredByTime(item.expiresAt)" class="bg-red-500 text-white px-4 py-1 font-bold text-sm shadow-lg flex items-center gap-2" :class="{'rounded-bl-xl': !isExpiredByUses(item), 'rounded-tr-xl': true}">
+                  <img src="/expired-svgrepo-com.svg" alt="Expired" class="w-4 h-4 inline-block" />
+                  EXPIRED
+                </span>
+              </div>
+
               <div class="flex items-center justify-between">
                 <!-- File Info -->
                 <div class="flex items-center space-x-4 flex-1">

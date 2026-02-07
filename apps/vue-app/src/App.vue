@@ -15,15 +15,15 @@
     
     <nav class="bg-white/95 backdrop-blur-md shadow-2xl border-b-2 border-purple-200 sticky top-0 z-50">
       <div class="container mx-auto px-4 py-3">
-        <div class="flex items-center justify-between">
-          <router-link to="/" class="flex items-center space-x-2 sm:space-x-3 group">
+        <div class="flex items-center justify-between gap-4">
+          <router-link to="/" class="flex items-center space-x-2 sm:space-x-3 group flex-shrink-0">
             <div class="relative">
               <div class="absolute inset-0 bg-purple-100 rounded-full blur-lg opacity-50 group-hover:opacity-75 transition-opacity"></div>
               <img src="/logo.png" alt="FileDuck" class="h-10 w-10 sm:h-12 sm:w-12 transform group-hover:scale-110 group-hover:rotate-12 transition-all relative z-10" />
             </div>
             <span class="text-xl sm:text-2xl font-bold font-display tracking-tight text-violet-900">FileDuck</span>
           </router-link>
-          
+
           <!-- Mobile Menu Button -->
           <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden p-2 rounded-lg hover:bg-purple-50 transition-colors">
             <svg v-if="!mobileMenuOpen" class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,9 +33,9 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-          
+
           <!-- Desktop Menu -->
-          <div class="hidden md:flex space-x-2 lg:space-x-6 items-center">
+          <div class="hidden md:flex flex-1 justify-between items-center ml-8 max-w-5xl">
             <router-link to="/" class="flex items-center text-gray-700 hover:text-purple-600 transition-all font-semibold px-3 lg:px-4 py-2 rounded-lg hover:bg-purple-50 group">
               <HomeIcon class="w-5 h-5 mr-1 lg:mr-2 group-hover:scale-110 transition-transform" />
               <span class="text-sm lg:text-base">Home</span>
@@ -51,6 +51,14 @@
             <router-link to="/history" class="flex items-center text-gray-700 hover:text-purple-600 transition-all font-semibold px-3 lg:px-4 py-2 rounded-lg hover:bg-purple-50 group cursor-pointer">
               <ClockIcon class="w-5 h-5 mr-1 lg:mr-2 group-hover:scale-110 transition-transform" />
               <span class="text-sm lg:text-base">My Activity</span>
+            </router-link>
+            <router-link to="/docs" class="flex items-center text-gray-700 hover:text-blue-600 transition-all font-semibold px-3 lg:px-4 py-2 rounded-lg hover:bg-blue-50 group cursor-pointer">
+              <BookOpenIcon class="w-5 h-5 mr-1 lg:mr-2 group-hover:scale-110 transition-transform" />
+              <span class="text-sm lg:text-base">Docs</span>
+            </router-link>
+            <router-link to="/faq" class="flex items-center text-gray-700 hover:text-green-600 transition-all font-semibold px-3 lg:px-4 py-2 rounded-lg hover:bg-green-50 group cursor-pointer">
+              <HelpCircleIcon class="w-5 h-5 mr-1 lg:mr-2 group-hover:scale-110 transition-transform" />
+              <span class="text-sm lg:text-base">FAQ</span>
             </router-link>
           </div>
         </div>
@@ -72,6 +80,14 @@
           <router-link @click="mobileMenuOpen = false" to="/history" class="flex items-center text-gray-700 hover:text-purple-600 transition-all font-semibold px-4 py-3 rounded-lg hover:bg-purple-50 group">
             <ClockIcon class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
             My Activity
+          </router-link>
+          <router-link @click="mobileMenuOpen = false" to="/docs" class="flex items-center text-gray-700 hover:text-blue-600 transition-all font-semibold px-4 py-3 rounded-lg hover:bg-blue-50 group">
+            <BookOpenIcon class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
+            Docs
+          </router-link>
+          <router-link @click="mobileMenuOpen = false" to="/faq" class="flex items-center text-gray-700 hover:text-green-600 transition-all font-semibold px-4 py-3 rounded-lg hover:bg-green-50 group">
+            <HelpCircleIcon class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
+            FAQ
           </router-link>
         </div>
       </div>
@@ -101,53 +117,116 @@
       </div>
     </main>
 
-    <footer class="bg-gradient-to-br from-lime-50 to-lime-100 mt-16 border-t-2 border-lime-200">
-      <div class="container mx-auto px-4 py-8 sm:py-12">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-6">
-          <div class="text-center sm:text-left">
-            <div class="flex items-center justify-center sm:justify-start space-x-2 mb-4">
-              <img src="/logo.png" alt="FileDuck" class="h-8 sm:h-10 w-8 sm:w-10" />
-              <span class="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-400 to-lime-500 bg-clip-text text-transparent">FileDuck</span>
+    <footer class="bg-cream-50 mt-16 border-t-2 border-purple-200">
+      <div class="container mx-auto px-4 py-12">
+        <!-- Main Footer Content -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+          <!-- Brand Section -->
+          <div>
+            <div class="flex items-center space-x-2 mb-4">
+              <img src="/logo.png" alt="FileDuck" class="h-10 w-10" />
+              <span class="text-2xl font-bold text-purple-900">FileDuck</span>
             </div>
-            <p class="text-sm text-gray-700 px-4 sm:px-0">
-              Secure, fast, and private file sharing with malware protection
+            <p class="text-sm text-gray-600 leading-relaxed mb-4">
+              Secure, fast, and private file sharing platform with AI-powered malware protection.
             </p>
+            <div class="flex items-center space-x-2 text-sm text-gray-600">
+              <MailIcon class="w-4 h-4 text-purple-500" />
+              <a href="mailto:support@fileduck.com" class="hover:text-purple-600 transition-colors">
+                support@fileduck.com
+              </a>
+            </div>
           </div>
-          <div class="text-center sm:text-left">
-            <h3 class="font-bold text-lime-700 mb-3 flex items-center justify-center sm:justify-start text-base sm:text-lg">
-              <ShieldCheckIcon class="w-5 h-5 mr-2" />
-              Security
-            </h3>
-            <ul class="text-sm text-gray-600 space-y-2">
-              <li class="flex items-center justify-center sm:justify-start"><span class="text-lime-600 mr-2">✓</span>Malware scanning</li>
-              <li class="flex items-center justify-center sm:justify-start"><span class="text-lime-600 mr-2">✓</span>Zero-knowledge encryption</li>
-              <li class="flex items-center justify-center sm:justify-start"><span class="text-lime-600 mr-2">✓</span>Time-limited links</li>
+
+          <!-- Quick Links -->
+          <div>
+            <h3 class="font-bold text-gray-800 mb-4 text-lg">Quick Links</h3>
+            <ul class="space-y-2 text-sm">
+              <li>
+                <router-link to="/" class="text-gray-600 hover:text-purple-600 transition-colors flex items-center">
+                  <span class="text-purple-500 mr-2">→</span>Home
+                </router-link>
+              </li>
+              <li>
+                <router-link to="/docs" class="text-gray-600 hover:text-purple-600 transition-colors flex items-center">
+                  <span class="text-purple-500 mr-2">→</span>Documentation
+                </router-link>
+              </li>
+              <li>
+                <router-link to="/faq" class="text-gray-600 hover:text-purple-600 transition-colors flex items-center">
+                  <span class="text-purple-500 mr-2">→</span>FAQ
+                </router-link>
+              </li>
+              <li>
+                <router-link to="/history" class="text-gray-600 hover:text-purple-600 transition-colors flex items-center">
+                  <span class="text-purple-500 mr-2">→</span>My Activity
+                </router-link>
+              </li>
             </ul>
           </div>
-          <div class="text-center sm:text-left sm:col-span-2 lg:col-span-1">
-            <h3 class="font-bold text-lime-700 mb-3 flex items-center justify-center sm:justify-start text-base sm:text-lg">
-              <ZapIcon class="w-5 h-5 mr-2" />
-              Features
-            </h3>
-            <ul class="text-sm text-gray-600 space-y-2">
-              <li class="flex items-center justify-center sm:justify-start"><span class="text-lime-600 mr-2">✓</span><span class="break-words">Up to 5GB files (100MB scan limit)</span></li>
-              <li class="flex items-center justify-center sm:justify-start"><span class="text-lime-600 mr-2">✓</span>Global CDN delivery</li>
-              <li class="flex items-center justify-center sm:justify-start"><span class="text-lime-600 mr-2">✓</span>SHA-256 checksums</li>
+
+          <!-- Security & Features -->
+          <div>
+            <h3 class="font-bold text-gray-800 mb-4 text-lg">Security</h3>
+            <ul class="space-y-2 text-sm text-gray-600">
+              <li class="flex items-center">
+                <ShieldCheckIcon class="w-4 h-4 mr-2 text-purple-500" />
+                AI Malware Scanning
+              </li>
+              <li class="flex items-center">
+                <LockIcon class="w-4 h-4 mr-2 text-purple-500" />
+                End-to-End Encryption
+              </li>
+              <li class="flex items-center">
+                <ZapIcon class="w-4 h-4 mr-2 text-purple-500" />
+                Global CDN Network
+              </li>
+              <li class="flex items-center">
+                <ClockIcon class="w-4 h-4 mr-2 text-purple-500" />
+                Time-Limited Links
+              </li>
+            </ul>
+          </div>
+
+          <!-- Community & Legal -->
+          <div>
+            <h3 class="font-bold text-gray-800 mb-4 text-lg">Community</h3>
+            <ul class="space-y-2 text-sm">
+              <li>
+                <a
+                  href="https://github.com/yourusername/fileduck"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-gray-600 hover:text-purple-600 transition-colors flex items-center"
+                >
+                  <GithubIcon class="w-4 h-4 mr-2" />
+                  Contribute on GitHub
+                </a>
+              </li>
+              <li>
+                <router-link to="/privacy" class="text-gray-600 hover:text-purple-600 transition-colors flex items-center">
+                  <span class="text-purple-500 mr-2">→</span>Privacy Policy
+                </router-link>
+              </li>
+              <li>
+                <router-link to="/terms" class="text-gray-600 hover:text-purple-600 transition-colors flex items-center">
+                  <span class="text-purple-500 mr-2">→</span>Terms of Service
+                </router-link>
+              </li>
             </ul>
           </div>
         </div>
-        <div class="border-t border-lime-300 pt-6 text-center text-xs sm:text-sm text-gray-600">
-          <div class="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4 mb-3">
-            <router-link to="/privacy" class="hover:text-lime-600 transition-colors font-medium">Privacy Policy</router-link>
-            <span class="hidden sm:inline">•</span>
-            <router-link to="/terms" class="hover:text-lime-600 transition-colors font-medium">Terms of Service</router-link>
-          </div>
-          <p class="text-gray-500">&copy; 2026 FileDuck. All rights reserved.</p>
-          <div class="mt-4 pb-2">
-             <span class="text-xs font-medium text-gray-500/80">Designed & Developed by </span>
-             <span class="inline-block font-bold bg-gradient-to-r from-violet-600 via-fuchsia-500 to-amber-500 bg-[length:200%_auto] animate-gradient bg-clip-text text-transparent transform hover:scale-105 transition-all duration-300 cursor-default shadow-lg shadow-purple-500/10">
-               Fahad Khan
-             </span>
+
+        <!-- Footer Bottom -->
+        <div class="border-t border-purple-200 pt-6">
+          <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+            <p class="text-sm text-gray-600">
+              &copy; 2026 FileDuck. All rights reserved.
+            </p>
+            <div class="flex items-center space-x-2 text-sm">
+              <span class="text-gray-600">Designed & Developed by</span>
+              <span class="font-bold text-purple-600">Fahad Khan</span>
+            </div>
           </div>
         </div>
       </div>
@@ -158,7 +237,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { UploadIcon, DownloadIcon, ClockIcon, ShieldCheckIcon, ZapIcon, FileIcon, FolderIcon, FileTextIcon, ImageIcon, FileCodeIcon, HomeIcon } from 'lucide-vue-next';
+import { UploadIcon, DownloadIcon, ClockIcon, ShieldCheckIcon, ZapIcon, FileIcon, FolderIcon, FileTextIcon, ImageIcon, FileCodeIcon, HomeIcon, BookOpenIcon, HelpCircleIcon, MailIcon, LockIcon, GithubIcon } from 'lucide-vue-next';
 import ParticleBackground from './components/ParticleBackground.vue';
 import NotificationContainer from './components/NotificationContainer.vue';
 

@@ -26,7 +26,7 @@
             Upload Your File
           </h3>
           <p class="text-gray-600 leading-relaxed">
-            Drag & drop or select your file. We support files up to 5GB. Your file is encrypted in your browser before upload.
+            Drag & drop or select your file. We support files up to 500GB with pause/resume. Your file is encrypted in your browser before upload.
           </p>
           <div class="mt-4 flex items-center text-sm text-purple-500">
             <ShieldCheckIcon class="w-4 h-4 mr-1" />

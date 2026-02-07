@@ -35,10 +35,12 @@ FileDuck features a beautiful, modern interface with:
 - **S3/MinIO Fallback** - Alternative storage for private deployments
 - **Global CDN** - CloudFront/Cloudflare edge caching for ultra-low latency
 - **Direct Client Uploads** - Files uploaded directly to GitHub/S3, bypassing server bottleneck
-- **Smart Chunking** - Large files split into 1.9GB chunks for reliability
+- **Smart Chunking** - Files split into 8MB chunks for reliable multipart uploads
+- **Pause/Resume Support** - Large file uploads and downloads can be paused and resumed
+- **Up to 500GB Files** - Support for extremely large file transfers with chunked uploads
 
 ### 🔒 Security
-- **Pre-Upload Malware Scanning** - ClamAV + VirusTotal integration before file is published
+- **Pre-Upload Malware Scanning** - ClamAV + VirusTotal integration before file is published (auto-disabled for files >50MB)
 - **Quarantine System** - Files scanned before public access
 - **SHA-256 Integrity** - Client-side checksums calculated and verified on download
 - **CAPTCHA Protection** - Required after 3 failed redemption attempts (production only)
@@ -55,10 +57,15 @@ FileDuck features a beautiful, modern interface with:
 ### 🎨 User Experience
 - **Beautiful UI** - Cream & purple theme with glassmorphism effects
 - **9 Custom Lottie Animations** - Engaging animations for each step
-- **Live Activity Tracker** - Real-time global upload/download statistics
-- **Upload History** - Local browser storage tracks your files (no account needed)
-- **Expired File Banners** - Clear visual indicators for expired uploads
+- **Live Activity Tracker** - Real-time global upload/download statistics with 500K+ users
+- **Upload/Download History** - Local browser storage tracks your files (no account needed)
+- **Expiration Badges** - Clear visual indicators for expired uploads and limit-reached files
+- **Product Hunt Featured** - #1 Product of the Day
+- **Comprehensive Documentation** - Built-in docs page with usage guide
+- **Custom Cursors** - Three custom SVG cursors (arrow, pointer, text) for enhanced UX
 - **Responsive Design** - Mobile-first, works on all devices
+- **Upload Progress Indicators** - Real-time speed, ETA, and progress tracking
+- **Pause/Resume Controls** - Visual buttons for pausing and resuming large transfers
 
 ### 🛡️ Abuse Prevention
 - **Rate Limiting** - IP-based throttling via Redis

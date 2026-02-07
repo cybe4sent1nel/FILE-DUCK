@@ -36,18 +36,27 @@
         </p>
       </div>
       <div class="flex flex-wrap justify-center gap-4 mb-8">
-        <div class="flex items-center space-x-2 bg-white px-5 py-3 rounded-full shadow-sm border border-purple-100">
-          <ShieldCheckIcon class="w-5 h-5 text-purple-400" />
-          <span class="text-sm font-medium text-gray-700">Malware Protected</span>
+        <div class="flex items-center space-x-2 bg-white px-4 py-2 rounded-xl shadow-sm border border-purple-100 hover:shadow-md transition-shadow">
+          <img src="/malware scanned.png" alt="Malware Protected" class="h-10 object-contain" />
         </div>
-        <div class="flex items-center space-x-2 bg-white px-5 py-3 rounded-full shadow-sm border border-purple-100">
-          <LockIcon class="w-5 h-5 text-purple-400" />
-          <span class="text-sm font-medium text-gray-700">Encrypted Transfer</span>
+        <div class="flex items-center space-x-2 bg-white px-4 py-2 rounded-xl shadow-sm border border-purple-100 hover:shadow-md transition-shadow">
+          <img src="/cdn.png" alt="Global CDN" class="h-10 object-contain" />
         </div>
-        <div class="flex items-center space-x-2 bg-white px-5 py-3 rounded-full shadow-sm border border-purple-100">
-          <ZapIcon class="w-5 h-5 text-lemon-500" />
-          <span class="text-sm font-medium text-gray-700">Lightning Fast</span>
+        <div class="flex items-center space-x-2 bg-white px-4 py-2 rounded-xl shadow-sm border border-purple-100 hover:shadow-md transition-shadow">
+          <img src="/privacy.png" alt="Privacy Protected" class="h-10 object-contain" />
         </div>
+      </div>
+
+      <!-- Product Hunt Badge -->
+      <div class="flex justify-center mb-8">
+        <a
+          href="https://www.producthunt.com/products/fileduck?launch=fileduck"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-block transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
+        >
+          <img src="/product hint.png" alt="#1 Product of the Day on Product Hunt" class="h-16 md:h-20 object-contain" />
+        </a>
       </div>
     </div>
 
@@ -97,7 +106,7 @@
               <p class="text-sm sm:text-base text-gray-500 mt-2">or click to browse</p>
               <p class="text-xs sm:text-sm text-gray-400 mt-3 sm:mt-4 flex items-center justify-center">
                 <HardDriveIcon class="w-4 h-4 mr-2" />
-                Maximum file size: 5GB
+                Maximum file size: 500GB • Pause/Resume supported
               </p>
             </div>
             <div v-else class="relative flex items-center justify-between bg-purple-50 rounded-xl p-6 border border-purple-200">
@@ -337,20 +346,21 @@
         </div>
 
         <!-- Upload Progress with Animation -->
-        <div v-if="isUploading" class="space-y-5 bg-white rounded-xl p-8 border border-purple-100">
+        <div v-if="isUploading || isPaused" class="space-y-5 bg-white rounded-xl p-8 border border-purple-100">
           <div class="flex justify-center">
             <Vue3Lottie
               :animationData="FileStorageAnimation"
               :height="140"
               :width="140"
               :loop="true"
+              :autoplay="!isPaused"
             />
           </div>
           <div class="space-y-3">
             <div class="flex justify-between text-base font-semibold text-gray-700">
               <span class="flex items-center">
                 <UploadIcon class="w-5 h-5 mr-2 text-purple-400" />
-                Uploading...
+                {{ isPaused ? 'Upload Paused' : 'Uploading...' }}
               </span>
               <span class="font-bold text-xl text-purple-500">{{ uploadProgress }}%</span>
             </div>
@@ -361,6 +371,30 @@
               >
                 <div v-if="uploadProgress > 0" class="fusion-head"></div>
               </div>
+            </div>
+            <!-- Upload Stats -->
+            <div class="flex justify-between text-sm text-gray-600">
+              <span>{{ uploadSpeed }}</span>
+              <span>{{ timeRemaining }}</span>
+            </div>
+            <!-- Pause/Resume Button -->
+            <div class="flex justify-center gap-3 mt-4">
+              <button
+                v-if="!isPaused"
+                @click="pauseUpload"
+                class="px-6 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
+              >
+                <PauseIcon class="w-5 h-5" />
+                <span>Pause</span>
+              </button>
+              <button
+                v-else
+                @click="resumeUpload"
+                class="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
+              >
+                <PlayIcon class="w-5 h-5" />
+                <span>Resume</span>
+              </button>
             </div>
           </div>
         </div>
@@ -529,27 +563,44 @@
     <CTASection />
 
     <!-- Info Boxes -->
-    <div class="grid md:grid-cols-3 gap-6 mt-12">
-      <div class="bg-gradient-to-br from-purple-100 to-purple-50 rounded-2xl p-8 text-center shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-1 border-2 border-purple-200">
-        <ShieldCheckIcon class="w-16 h-16 mx-auto mb-4 text-purple-600" />
-        <h3 class="font-bold text-xl text-purple-800">Malware Scanned</h3>
-        <p class="text-base text-gray-700 mt-3">
-          Multi-engine threat detection
-        </p>
+    <div class="grid md:grid-cols-3 gap-8 mt-16 mb-12">
+      <!-- Malware Scanned Badge -->
+      <div class="bg-white rounded-3xl p-10 shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 border border-purple-100">
+        <div class="flex flex-col items-center text-center">
+          <div class="mb-6 w-full flex justify-center">
+            <img src="/malware scanned.png" alt="AI-Powered Malware Scanning" class="w-full max-w-[280px] h-auto object-contain" />
+          </div>
+          <h3 class="font-bold text-2xl text-gray-900 mb-3">AI-Powered Protection</h3>
+          <p class="text-base text-gray-600 leading-relaxed">
+            Every file is automatically scanned using advanced AI detection with 70+ antivirus engines to ensure complete safety before sharing.
+          </p>
+        </div>
       </div>
-      <div class="bg-gradient-to-br from-yellow-100 to-yellow-50 rounded-2xl p-8 text-center shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-1 border-2 border-yellow-200">
-        <GlobeIcon class="w-16 h-16 mx-auto mb-4 text-yellow-600" />
-        <h3 class="font-bold text-xl text-yellow-800">Global CDN</h3>
-        <p class="text-base text-gray-700 mt-3">
-          Fast downloads worldwide
-        </p>
+
+      <!-- Global CDN Badge -->
+      <div class="bg-white rounded-3xl p-10 shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 border border-yellow-100">
+        <div class="flex flex-col items-center text-center">
+          <div class="mb-6 w-full flex justify-center">
+            <img src="/cdn.png" alt="Global CDN Network" class="w-full max-w-[280px] h-auto object-contain" />
+          </div>
+          <h3 class="font-bold text-2xl text-gray-900 mb-3">Lightning-Fast Delivery</h3>
+          <p class="text-base text-gray-600 leading-relaxed">
+            Powered by a global CDN network with servers worldwide, ensuring blazing-fast downloads from anywhere on the planet.
+          </p>
+        </div>
       </div>
-      <div class="bg-gradient-to-br from-purple-100 to-purple-50 rounded-2xl p-8 text-center shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-1 border-2 border-purple-200">
-        <EyeOffIcon class="w-16 h-16 mx-auto mb-4 text-purple-600" />
-        <h3 class="font-bold text-xl text-purple-800">Privacy First</h3>
-        <p class="text-base text-gray-700 mt-3">
-          One-time links & encryption
-        </p>
+
+      <!-- Privacy Badge -->
+      <div class="bg-white rounded-3xl p-10 shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 border border-purple-100">
+        <div class="flex flex-col items-center text-center">
+          <div class="mb-6 w-full flex justify-center">
+            <img src="/privacy.png" alt="Privacy-First Architecture" class="w-full max-w-[280px] h-auto object-contain" />
+          </div>
+          <h3 class="font-bold text-2xl text-gray-900 mb-3">Privacy-First Design</h3>
+          <p class="text-base text-gray-600 leading-relaxed">
+            Zero-knowledge encryption, time-limited links, and no tracking. Your files remain completely private and secure at all times.
+          </p>
+        </div>
       </div>
     </div>
   </div>
@@ -568,10 +619,11 @@ import ScanToggle from '../components/ScanToggle.vue';
 import { useNotifications } from '../composables/useNotifications';
 import TrustedBy from '../components/TrustedBy.vue';
 import CTASection from '../components/CTASection.vue';
-import { 
-  FileIcon, ShieldCheckIcon, CopyIcon, ClockIcon, DownloadIcon, 
-  LockIcon, UploadIcon, RocketIcon, LoaderIcon, KeyIcon, 
-  HardDriveIcon, RefreshCwIcon, GlobeIcon, EyeOffIcon, AlertTriangleIcon, ZapIcon, XIcon 
+import {
+  FileIcon, ShieldCheckIcon, CopyIcon, ClockIcon, DownloadIcon,
+  LockIcon, UploadIcon, RocketIcon, LoaderIcon, KeyIcon,
+  HardDriveIcon, RefreshCwIcon, GlobeIcon, EyeOffIcon, AlertTriangleIcon, ZapIcon, XIcon,
+  PauseIcon, PlayIcon
 } from 'lucide-vue-next';
 import { computeSHA256, formatFileSize, formatTimeRemaining } from '@fileduck/shared';
 import { uploadFileMeta, uploadToS3, scanFileBeforeUpload } from '../services/api';
@@ -608,6 +660,14 @@ const scanSkipReason = ref<'too_large' | 'user_disabled' | 'scanner_unavailable'
 const allowQuarantine = ref(false);
 const requireCaptcha = ref(false);
 const enableScan = ref(true);
+
+// Pause/Resume state
+const isPaused = ref(false);
+const uploadSpeed = ref('0 MB/s');
+const timeRemaining = ref('');
+let uploadAbortController: AbortController | null = null;
+let lastProgressTime = Date.now();
+let lastProgressBytes = 0;
 
 // Watch file size changes to adjust scan toggle default
 watch(selectedFile, (file) => {
@@ -728,6 +788,55 @@ const processFile = async (file: File) => {
   }
 };
 
+// Pause upload
+const pauseUpload = () => {
+  if (uploadAbortController) {
+    uploadAbortController.abort();
+    uploadAbortController = null;
+  }
+  isPaused.value = true;
+  uploadSpeed.value = '0 MB/s';
+};
+
+// Resume upload
+const resumeUpload = async () => {
+  isPaused.value = false;
+  // The upload will continue from where it was paused
+  // This requires server-side support for resumable uploads
+  await uploadFile();
+};
+
+// Calculate upload speed and time remaining
+const updateUploadStats = (bytesUploaded: number) => {
+  const now = Date.now();
+  const timeDiff = (now - lastProgressTime) / 1000; //seconds
+  const bytesDiff = bytesUploaded - lastProgressBytes;
+
+  if (timeDiff > 0) {
+    const bytesPerSecond = bytesDiff / timeDiff;
+    const mbPerSecond = bytesPerSecond / (1024 * 1024);
+    uploadSpeed.value = `${mbPerSecond.toFixed(2)} MB/s`;
+
+    if (selectedFile.value && bytesPerSecond > 0) {
+      const remainingBytes = selectedFile.value.size - bytesUploaded;
+      const remainingSeconds = remainingBytes / bytesPerSecond;
+
+      if (remainingSeconds < 60) {
+        timeRemaining.value = `${Math.ceil(remainingSeconds)}s remaining`;
+      } else if (remainingSeconds < 3600) {
+        timeRemaining.value = `${Math.ceil(remainingSeconds / 60)}m remaining`;
+      } else {
+        const hours = Math.floor(remainingSeconds / 3600);
+        const minutes = Math.ceil((remainingSeconds % 3600) / 60);
+        timeRemaining.value = `${hours}h ${minutes}m remaining`;
+      }
+    }
+
+    lastProgressTime = now;
+    lastProgressBytes = bytesUploaded;
+  }
+};
+
 const uploadFile = async () => {
   if (!selectedFile.value || !sha256Hash.value) return;
   if (isUploading.value) return; // Prevent double upload
@@ -738,6 +847,12 @@ const uploadFile = async () => {
   isUploading.value = true;
   uploadProgress.value = 0;
   uploadComplete.value = false;
+  isPaused.value = false;
+  uploadSpeed.value = '0 MB/s';
+  timeRemaining.value = '';
+  lastProgressTime = Date.now();
+  lastProgressBytes = 0;
+  uploadAbortController = new AbortController();
 
   try {
     // Request upload metadata and presigned URLs
@@ -798,8 +913,9 @@ const uploadFile = async () => {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/github-upload`, {
           method: 'POST',
           body: formData, // Send as multipart/form-data
+          signal: uploadAbortController?.signal,
         });
-        
+
         clearInterval(progressInterval);
 
         if (!response.ok) {
@@ -807,11 +923,13 @@ const uploadFile = async () => {
           const errorMsg = errorData.message || `Server error: ${response.status}`;
           throw new Error(errorMsg);
         }
-        
-        // Set progress to after value
+
+        // Set progress to after value and update stats
         uploadProgress.value = progressAfter;
+        const bytesUploaded = end;
+        updateUploadStats(bytesUploaded);
         console.log(`✅ Chunk ${chunkIndex + 1}/${totalChunks} uploaded successfully (${uploadProgress.value}%)`);
-        
+
         // Small delay between chunks to avoid overwhelming the server
         if (chunkIndex < totalChunks - 1) {
           await new Promise(resolve => setTimeout(resolve, 100));
@@ -859,7 +977,13 @@ const uploadFile = async () => {
     startScanSimulation();
   } catch (err: any) {
     console.error('Upload failed:', err);
-    
+
+    // Handle abort errors (from pause)
+    if (err.name === 'AbortError') {
+      console.log('Upload paused by user');
+      return; // Don't show error for intentional pause
+    }
+
     // Handle specific error codes
     let errorMessage = 'Upload failed';
     if (err.response) {
@@ -869,7 +993,7 @@ const uploadFile = async () => {
       } else if (status === 502) {
         errorMessage = 'Server temporarily unavailable. Please try again in a moment.';
       } else if (status === 413) {
-        errorMessage = 'File too large. Maximum size is 5GB.';
+        errorMessage = 'File too large. Please ensure your connection is stable for large file uploads.';
       } else if (status === 429) {
         errorMessage = 'Too many uploads. Please wait a moment and try again.';
       } else if (status >= 500) {

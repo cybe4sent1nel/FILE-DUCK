@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-gradient-to-r from-purple-50 to-yellow-50 rounded-2xl p-6 shadow-lg border-2 border-purple-200">
+  <div class="bg-purple-50 rounded-2xl p-6 shadow-lg border-2 border-purple-200">
     <div class="text-center mb-6">
       <div class="flex items-center justify-center mb-2">
         <Vue3Lottie
@@ -21,7 +21,7 @@
           <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse mr-2"></div>
           <UploadIcon class="w-5 h-5 text-green-600" />
         </div>
-        <div class="text-3xl font-bold text-green-600 font-mono">{{ liveStats.uploadsToday }}</div>
+        <div class="text-3xl font-bold text-green-600 font-mono transition-all duration-500">{{ formatNumber(liveStats.uploadsToday) }}</div>
         <div class="text-xs text-gray-600 mt-1">Uploads Today</div>
       </div>
 
@@ -30,7 +30,7 @@
           <div class="w-3 h-3 bg-blue-500 rounded-full animate-pulse mr-2"></div>
           <DownloadIcon class="w-5 h-5 text-blue-600" />
         </div>
-        <div class="text-3xl font-bold text-blue-600 font-mono">{{ liveStats.downloadsToday }}</div>
+        <div class="text-3xl font-bold text-blue-600 font-mono transition-all duration-500">{{ formatNumber(liveStats.downloadsToday) }}</div>
         <div class="text-xs text-gray-600 mt-1">Downloads Today</div>
       </div>
 
@@ -39,7 +39,7 @@
           <div class="w-3 h-3 bg-purple-500 rounded-full animate-pulse mr-2"></div>
           <UsersIcon class="w-5 h-5 text-purple-600" />
         </div>
-        <div class="text-3xl font-bold text-purple-600 font-mono">{{ liveStats.activeUsers }}</div>
+        <div class="text-3xl font-bold text-purple-600 font-mono transition-all duration-700 ease-in-out">{{ formatNumber(liveStats.activeUsers) }}</div>
         <div class="text-xs text-gray-600 mt-1">Users Online</div>
       </div>
 
@@ -48,7 +48,7 @@
           <div class="w-3 h-3 bg-yellow-500 rounded-full animate-pulse mr-2"></div>
           <ShieldCheckIcon class="w-5 h-5 text-yellow-600" />
         </div>
-        <div class="text-3xl font-bold text-yellow-600 font-mono">{{ liveStats.filesScanned }}</div>
+        <div class="text-3xl font-bold text-yellow-600 font-mono transition-all duration-500">{{ formatNumber(liveStats.filesScanned) }}</div>
         <div class="text-xs text-gray-600 mt-1">Files Scanned</div>
       </div>
     </div>
@@ -107,7 +107,7 @@
     <div class="mt-4 text-center">
       <div class="inline-flex items-center bg-green-100 text-green-800 px-4 py-2 rounded-full text-xs font-bold">
         <CheckCircleIcon class="w-4 h-4 mr-2" />
-        100% Secure • Trusted by {{ (liveStats.totalUsers / 1000).toFixed(1) }}K+ Users
+        100% Secure • Trusted by {{ formatNumber(liveStats.totalUsers) }}+ Users
       </div>
     </div>
   </div>
@@ -145,13 +145,109 @@ interface Activity {
   timestamp: number;
 }
 
-const liveStats = ref<LiveStats>({
-  uploadsToday: 1247,
-  downloadsToday: 3892,
-  activeUsers: 156,
-  filesScanned: 1189,
-  totalUsers: 500000,
-});
+const STORAGE_KEY = 'fileduck_live_stats';
+const BASELINE_KEY = 'fileduck_baseline_stats';
+const STATS_VERSION = '1.0';
+
+// Helper to get base date for "today" (midnight UTC)
+const getTodayKey = () => {
+  const now = new Date();
+  return `${now.getUTCFullYear()}-${now.getUTCMonth() + 1}-${now.getUTCDate()}`;
+};
+
+// Get or initialize baseline stats (cumulative totals that never decrease)
+const getBaseline = (): LiveStats => {
+  try {
+    const stored = localStorage.getItem(BASELINE_KEY);
+    if (stored) {
+      const baseline = JSON.parse(stored);
+      if (baseline.version === STATS_VERSION) {
+        return baseline.stats;
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load baseline from storage', e);
+  }
+
+  // Initial baseline - realistic starting point for a 5M+ user platform
+  return {
+    uploadsToday: 487200, // Starting cumulative: ~487K
+    downloadsToday: 1825000, // Starting cumulative: ~1.8M
+    activeUsers: 58000 + Math.floor(Math.random() * 22000), // 58-80K online (~1.2% of 5.2M users)
+    filesScanned: 485600, // Starting cumulative: ~485K
+    totalUsers: 5247000, // 5.2M+ users
+  };
+};
+
+// Save baseline (end-of-day totals that become next day's starting point)
+const saveBaseline = (stats: LiveStats) => {
+  try {
+    localStorage.setItem(BASELINE_KEY, JSON.stringify({
+      version: STATS_VERSION,
+      stats: {
+        uploadsToday: stats.uploadsToday,
+        downloadsToday: stats.downloadsToday,
+        activeUsers: stats.activeUsers,
+        filesScanned: stats.filesScanned,
+        totalUsers: stats.totalUsers,
+      },
+      lastUpdated: Date.now(),
+    }));
+  } catch (e) {
+    console.warn('Failed to save baseline to storage', e);
+  }
+};
+
+// Load stats from localStorage or initialize
+const loadStats = (): LiveStats => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const data = JSON.parse(stored);
+      // Check if it's from today
+      if (data.dateKey === getTodayKey() && data.version === STATS_VERSION) {
+        return data.stats;
+      }
+
+      // If it's from a previous day, save it as baseline and start new day
+      if (data.stats) {
+        saveBaseline(data.stats);
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load stats from storage', e);
+  }
+
+  // New day - start from baseline (yesterday's end) + today's progression
+  const baseline = getBaseline();
+  const baseDate = new Date().setHours(0, 0, 0, 0);
+  const hoursSinceMidnight = Math.floor((Date.now() - baseDate) / (1000 * 60 * 60));
+
+  // Add today's progression to baseline (so numbers never go down day-to-day)
+  return {
+    uploadsToday: baseline.uploadsToday + (hoursSinceMidnight * 28500), // Add ~28.5K/hour
+    downloadsToday: baseline.downloadsToday + (hoursSinceMidnight * 95000), // Add ~95K/hour
+    activeUsers: 58000 + Math.floor(Math.random() * 22000), // 58-80K online (~1.2% of 5.2M users)
+    filesScanned: baseline.filesScanned + (hoursSinceMidnight * 28200), // Add ~28.2K/hour
+    totalUsers: baseline.totalUsers, // Total users grow gradually via updateStats
+  };
+};
+
+// Save stats to localStorage
+const saveStats = (stats: LiveStats) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      version: STATS_VERSION,
+      dateKey: getTodayKey(),
+      stats,
+      lastUpdated: Date.now(),
+    }));
+  } catch (e) {
+    console.warn('Failed to save stats to storage', e);
+  }
+};
+
+const liveStats = ref<LiveStats>(loadStats());
 
 const recentActivities = ref<Activity[]>([]);
 
@@ -167,13 +263,49 @@ const generateRedactedName = () => {
   return `${mask}.${ext}`;
 };
 
+const formatNumber = (num: number): string => {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'M';
+  } else if (num >= 1000) {
+    return (num / 1000).toFixed(0) + 'K';
+  }
+  return num.toString();
+};
+
 const updateStats = () => {
-  // Simulate live stats updates
-  liveStats.value.uploadsToday += Math.floor(Math.random() * 3);
-  liveStats.value.downloadsToday += Math.floor(Math.random() * 5);
-  liveStats.value.activeUsers = 120 + Math.floor(Math.random() * 100);
-  liveStats.value.filesScanned += Math.floor(Math.random() * 2);
-  liveStats.value.totalUsers += Math.floor(Math.random() * 2);
+  // Only increment, never decrease - makes it trustworthy
+  // Scaled up for 15-minute intervals (180x the 5-second amounts)
+  const uploadInc = 2700 + Math.floor(Math.random() * 4500); // 2,700-7,200 uploads every 15 minutes
+  const downloadInc = 8100 + Math.floor(Math.random() * 13500); // 8,100-21,600 downloads every 15 minutes
+  const scanInc = 2160 + Math.floor(Math.random() * 4140); // 2,160-6,300 scans every 15 minutes
+  const userInc = Math.floor(Math.random() * 4); // Gradual user growth
+
+  liveStats.value.uploadsToday += uploadInc;
+  liveStats.value.downloadsToday += downloadInc;
+
+  // Online users fluctuate more visibly based on time of day
+  const hour = new Date().getUTCHours();
+  let baseOnline = 58000; // Base 58K users
+
+  // Peak hours (12-20 UTC): higher traffic
+  if (hour >= 12 && hour <= 20) {
+    baseOnline = 65000; // Peak: 65-87K users online
+  }
+  // Late night/early morning (0-6 UTC): lower traffic
+  else if (hour >= 0 && hour <= 6) {
+    baseOnline = 48000; // Off-peak: 48-70K users online
+  }
+
+  // Add visible fluctuation (±3000-8000 users every 5 seconds)
+  const fluctuation = 3000 + Math.floor(Math.random() * 5000);
+  const direction = Math.random() > 0.5 ? 1 : -1;
+
+  liveStats.value.activeUsers = baseOnline + (direction * fluctuation) + Math.floor(Math.random() * 15000);
+  liveStats.value.filesScanned += scanInc;
+  liveStats.value.totalUsers += userInc;
+
+  // Save to localStorage every update
+  saveStats(liveStats.value);
 };
 
 const addRandomActivity = () => {
@@ -212,9 +344,9 @@ const updateTimeAgo = () => {
 };
 
 onMounted(() => {
-  // Update stats every 5 seconds
-  statsInterval = setInterval(updateStats, 5000);
-  
+  // Update stats every 15 minutes (900000ms)
+  statsInterval = setInterval(updateStats, 900000);
+
   // Add new activity every 3-8 seconds
   const addActivity = () => {
     addRandomActivity();

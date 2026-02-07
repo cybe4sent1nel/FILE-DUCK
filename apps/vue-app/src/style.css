@@ -23,6 +23,7 @@ body {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulance type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
   color: #fffef7;
   cursor: url('/cursor-arrow.svg') 8 8, auto;
+  overflow-y: overlay; /* Use overlay scrollbar */
 }
 
 /* Default arrow cursor for all elements */
@@ -99,39 +100,72 @@ h1, h2, h3, h4, h5, h6 {
   font-family: 'Outfit', sans-serif;
 }
 
-/* Custom scrollbar - light purple pill only, no track */
+/* Custom scrollbar - purple pill with cream track */
+html,
+body {
+  overflow-x: hidden;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 10px !important;
+  height: 10px !important;
 }
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
 ::-webkit-scrollbar-track {
-  background: transparent;
-  border: none;
-  width: 0;
+  background: #fffaed !important;
+  background-color: #fffaed !important;
+  -webkit-box-shadow: none !important;
+  box-shadow: none !important;
 }
+
+html::-webkit-scrollbar-track-piece,
+body::-webkit-scrollbar-track-piece,
 ::-webkit-scrollbar-track-piece {
-  background: transparent;
-  border: none;
+  background: #fffaed !important;
+  background-color: #fffaed !important;
 }
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
 ::-webkit-scrollbar-thumb {
-  background: #c084fc;
-  border-radius: 10px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
+  background: #9333ea !important;
+  background-color: #9333ea !important;
+  border-radius: 5px !important;
+  border: none !important;
+  -webkit-border-radius: 5px !important;
 }
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover,
 ::-webkit-scrollbar-thumb:hover {
-  background: #a855f7;
-  border: 2px solid transparent;
-  background-clip: padding-box;
+  background: #7e22ce !important;
+  background-color: #7e22ce !important;
 }
+
+html::-webkit-scrollbar-corner,
+body::-webkit-scrollbar-corner,
 ::-webkit-scrollbar-corner {
-  background: transparent;
+  background: #fffaed !important;
+}
+
+html::-webkit-scrollbar-button,
+body::-webkit-scrollbar-button,
+::-webkit-scrollbar-button {
+  display: none !important;
+  height: 0 !important;
+  width: 0 !important;
 }
 
 /* Firefox scrollbar */
+html,
+body,
 * {
-  scrollbar-width: thin;
-  scrollbar-color: #c084fc transparent;
+  scrollbar-width: thin !important;
+  scrollbar-color: #9333ea #fffaed !important;
 }
 @keyframes gradient {
   0% {

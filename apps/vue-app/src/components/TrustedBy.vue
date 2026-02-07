@@ -1,7 +1,7 @@
 <template>
   <div class="py-20 my-16 overflow-hidden">
     <div class="container mx-auto px-4">
-      <h3 class="text-center text-4xl font-bold bg-gradient-to-r from-purple-400 to-lemon-400 bg-clip-text text-transparent mb-12 pb-2">
+      <h3 class="text-center text-4xl font-bold text-indigo-950 font-display tracking-tight leading-tight mb-12 pb-2">
         Trusted by Leading Organizations Worldwide
       </h3>
 

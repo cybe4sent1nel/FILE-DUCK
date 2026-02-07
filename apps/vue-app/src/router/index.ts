@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router';
 import UploadView from '../views/UploadView.vue';
 import DownloadView from '../views/DownloadView.vue';
 import HistoryView from '../views/HistoryView.vue';
+import DocsView from '../views/DocsView.vue';
+import FAQView from '../views/FAQView.vue';
 import PrivacyView from '../views/PrivacyView.vue';
 import TermsView from '../views/TermsView.vue';
 import NotFoundView from '../views/NotFoundView.vue';
@@ -28,6 +30,16 @@ const routes = [
     path: '/history',
     name: 'History',
     component: HistoryView,
+  },
+  {
+    path: '/docs',
+    name: 'Docs',
+    component: DocsView,
+  },
+  {
+    path: '/faq',
+    name: 'FAQ',
+    component: FAQView,
   },
   {
     path: '/privacy',

@@ -29,7 +29,7 @@
 
         <h2 class="text-2xl font-bold mt-6 mb-4">4. Service Limitations</h2>
         <ul class="list-disc pl-6 mb-4 space-y-2">
-          <li>Maximum file size: 5 GB</li>
+          <li>Maximum file size: 500 GB (with multipart chunking)</li>
           <li>Maximum retention: 7 days</li>
           <li>Rate limits apply to prevent abuse</li>
           <li>Files may be scanned and deleted if malicious</li>
