@@ -47,3 +47,6 @@ deploy-railway.*
 RAILWAY_DEPLOYMENT.md
 .railway/
 tmpclaude-*-cwd
+
+# Local Netlify folder
+.netlify
