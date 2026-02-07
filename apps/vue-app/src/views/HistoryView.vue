@@ -90,14 +90,16 @@
               class="bg-gradient-to-r from-purple-50 to-white rounded-xl p-6 shadow-md border border-purple-100 hover:shadow-lg transition-all relative"
             >
               <!-- Expired/Limit Badges -->
-              <div v-if="isExpiredItem(item)" class="absolute top-0 right-0 flex">
-                <span v-if="isExpiredByUses(item)" class="bg-orange-500 text-white px-4 py-1 rounded-bl-xl font-bold text-sm shadow-lg flex items-center gap-2" :class="{'rounded-tr-xl': !isExpiredByTime(item.expiresAt)}">
-                  <img src="/perimeter-limit-svgrepo-com.svg" alt="Limit" class="w-4 h-4 inline-block" />
-                  LIMIT REACHED
-                </span>
-                <span v-if="isExpiredByTime(item.expiresAt)" class="bg-red-500 text-white px-4 py-1 font-bold text-sm shadow-lg flex items-center gap-2" :class="{'rounded-bl-xl': !isExpiredByUses(item), 'rounded-tr-xl': true}">
+              <div v-if="isExpiredItem(item)" class="absolute top-0 right-0">
+                <!-- Show EXPIRED if time ran out (takes priority) -->
+                <span v-if="isExpiredByTime(item.expiresAt)" class="bg-red-500 text-white px-4 py-1 rounded-bl-xl rounded-tr-xl font-bold text-sm shadow-lg flex items-center gap-2">
                   <img src="/expired-svgrepo-com.svg" alt="Expired" class="w-4 h-4 inline-block" />
                   EXPIRED
+                </span>
+                <!-- Show LIMIT REACHED only if time hasn't expired yet but downloads hit zero -->
+                <span v-else-if="isExpiredByUses(item)" class="bg-orange-500 text-white px-4 py-1 rounded-bl-xl rounded-tr-xl font-bold text-sm shadow-lg flex items-center gap-2">
+                  <img src="/perimeter-limit-svgrepo-com.svg" alt="Limit" class="w-4 h-4 inline-block" />
+                  LIMIT REACHED
                 </span>
               </div>
 
@@ -152,7 +154,9 @@
                 </div>
                 <div>
                   <div class="text-xs text-gray-500 mb-1">Uses Remaining</div>
-                  <div class="font-bold text-gray-800">{{ item.usesLeft }} / {{ item.maxUses }}</div>
+                  <div class="font-bold" :class="item.usesLeft <= 0 ? 'text-red-600' : 'text-gray-800'">
+                    {{ Math.max(0, item.usesLeft) }} / {{ item.maxUses }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -185,14 +189,16 @@
               class="bg-gradient-to-r from-teal-50 to-white rounded-xl p-6 shadow-md border border-teal-100 hover:shadow-lg transition-all relative"
             >
               <!-- Expired/Limit Badges for downloads -->
-              <div v-if="item.expiresAt && isExpiredItem(item)" class="absolute top-0 right-0 flex">
-                <span v-if="isExpiredByUses(item)" class="bg-orange-500 text-white px-4 py-1 rounded-bl-xl font-bold text-sm shadow-lg flex items-center gap-2" :class="{'rounded-tr-xl': !isExpiredByTime(item.expiresAt)}">
-                  <img src="/perimeter-limit-svgrepo-com.svg" alt="Limit" class="w-4 h-4 inline-block" />
-                  LIMIT REACHED
-                </span>
-                <span v-if="isExpiredByTime(item.expiresAt)" class="bg-red-500 text-white px-4 py-1 font-bold text-sm shadow-lg flex items-center gap-2" :class="{'rounded-bl-xl': !isExpiredByUses(item), 'rounded-tr-xl': true}">
+              <div v-if="item.expiresAt && isExpiredItem(item)" class="absolute top-0 right-0">
+                <!-- Show EXPIRED if time ran out (takes priority) -->
+                <span v-if="isExpiredByTime(item.expiresAt)" class="bg-red-500 text-white px-4 py-1 rounded-bl-xl rounded-tr-xl font-bold text-sm shadow-lg flex items-center gap-2">
                   <img src="/expired-svgrepo-com.svg" alt="Expired" class="w-4 h-4 inline-block" />
                   EXPIRED
+                </span>
+                <!-- Show LIMIT REACHED only if time hasn't expired yet but downloads hit zero -->
+                <span v-else-if="isExpiredByUses(item)" class="bg-orange-500 text-white px-4 py-1 rounded-bl-xl rounded-tr-xl font-bold text-sm shadow-lg flex items-center gap-2">
+                  <img src="/perimeter-limit-svgrepo-com.svg" alt="Limit" class="w-4 h-4 inline-block" />
+                  LIMIT REACHED
                 </span>
               </div>
 
@@ -221,7 +227,7 @@
                 </div>
                 <div>
                   <div class="text-xs text-gray-500 mb-1">Downloaded At</div>
-                  <div class="font-bold text-gray-800">{{ new Date(item.downloadedAt || item.uploadedAt).toLocaleString() }}</div>
+                  <div class="font-bold text-gray-800">{{ formatDateTime12Hour(item.downloadedAt || item.uploadedAt) }}</div>
                 </div>
               </div>
             </div>
@@ -318,6 +324,19 @@ function formatDate(timestamp: number): string {
   if (diffDays < 7) return `${diffDays} days ago`;
 
   return date.toLocaleDateString();
+}
+
+function formatDateTime12Hour(timestamp: number): string {
+  const date = new Date(timestamp);
+  const options: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  };
+  return date.toLocaleString('en-US', options);
 }
 
 function isExpiredByTime(expiresAt: number): boolean {

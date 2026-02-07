@@ -1,5 +1,88 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-[#FFFBF5] px-4 py-8 relative overflow-hidden">
+  <div class="min-h-screen bg-[#FFFBF5] relative overflow-hidden">
+    <!-- Navbar -->
+    <nav class="bg-white/95 backdrop-blur-md shadow-2xl border-b-2 border-purple-200 sticky top-0 z-50">
+      <div class="container mx-auto px-4 py-3">
+        <div class="flex items-center justify-between gap-4">
+          <router-link to="/" class="flex items-center space-x-2 sm:space-x-3 group flex-shrink-0">
+            <div class="relative">
+              <div class="absolute inset-0 bg-purple-100 rounded-full blur-lg opacity-50 group-hover:opacity-75 transition-opacity"></div>
+              <img src="/logo.png" alt="FileDuck" class="h-10 w-10 sm:h-12 sm:w-12 transform group-hover:scale-110 group-hover:rotate-12 transition-all relative z-10" />
+            </div>
+            <span class="text-xl sm:text-2xl font-bold font-display tracking-tight text-violet-900">FileDuck</span>
+          </router-link>
+
+          <!-- Mobile Menu Button -->
+          <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden p-2 rounded-lg hover:bg-purple-50 transition-colors">
+            <svg v-if="!mobileMenuOpen" class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <svg v-else class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          <!-- Desktop Menu -->
+          <div class="hidden md:flex flex-1 justify-between items-center ml-8 max-w-5xl">
+            <router-link to="/" class="flex items-center text-gray-700 hover:text-purple-600 transition-all font-semibold px-3 lg:px-4 py-2 rounded-lg hover:bg-purple-50 group">
+              <HomeIcon class="w-5 h-5 mr-1 lg:mr-2 group-hover:scale-110 transition-transform" />
+              <span class="text-sm lg:text-base">Home</span>
+            </router-link>
+            <a href="/#upload" @click.prevent="scrollToUpload" class="flex items-center text-gray-700 hover:text-purple-600 transition-all font-semibold px-3 lg:px-4 py-2 rounded-lg hover:bg-purple-50 group cursor-pointer">
+              <UploadIcon class="w-5 h-5 mr-1 lg:mr-2 group-hover:scale-110 transition-transform" />
+              <span class="text-sm lg:text-base">Upload</span>
+            </a>
+            <router-link to="/download" class="flex items-center text-gray-700 hover:text-yellow-600 transition-all font-semibold px-3 lg:px-4 py-2 rounded-lg hover:bg-yellow-50 group cursor-pointer">
+              <DownloadIcon class="w-5 h-5 mr-1 lg:mr-2 group-hover:scale-110 transition-transform" />
+              <span class="text-sm lg:text-base">Download</span>
+            </router-link>
+            <router-link to="/history" class="flex items-center text-gray-700 hover:text-purple-600 transition-all font-semibold px-3 lg:px-4 py-2 rounded-lg hover:bg-purple-50 group cursor-pointer">
+              <ClockIconNav class="w-5 h-5 mr-1 lg:mr-2 group-hover:scale-110 transition-transform" />
+              <span class="text-sm lg:text-base">My Activity</span>
+            </router-link>
+            <router-link to="/docs" class="flex items-center text-gray-700 hover:text-blue-600 transition-all font-semibold px-3 lg:px-4 py-2 rounded-lg hover:bg-blue-50 group cursor-pointer">
+              <BookOpenIcon class="w-5 h-5 mr-1 lg:mr-2 group-hover:scale-110 transition-transform" />
+              <span class="text-sm lg:text-base">Docs</span>
+            </router-link>
+            <router-link to="/faq" class="flex items-center text-gray-700 hover:text-green-600 transition-all font-semibold px-3 lg:px-4 py-2 rounded-lg hover:bg-green-50 group cursor-pointer">
+              <HelpCircleIcon class="w-5 h-5 mr-1 lg:mr-2 group-hover:scale-110 transition-transform" />
+              <span class="text-sm lg:text-base">FAQ</span>
+            </router-link>
+          </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div v-if="mobileMenuOpen" class="md:hidden mt-4 pb-2 space-y-2">
+          <router-link @click="mobileMenuOpen = false" to="/" class="flex items-center text-gray-700 hover:text-purple-600 transition-all font-semibold px-4 py-3 rounded-lg hover:bg-purple-50 group">
+            <HomeIcon class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
+            Home
+          </router-link>
+          <a @click="scrollToUpload(); mobileMenuOpen = false" href="/#upload" class="flex items-center text-gray-700 hover:text-purple-600 transition-all font-semibold px-4 py-3 rounded-lg hover:bg-purple-50 group cursor-pointer">
+            <UploadIcon class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
+            Upload
+          </a>
+          <router-link @click="mobileMenuOpen = false" to="/download" class="flex items-center text-gray-700 hover:text-yellow-600 transition-all font-semibold px-4 py-3 rounded-lg hover:bg-yellow-50 group cursor-pointer">
+            <DownloadIcon class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
+            Download
+          </router-link>
+          <router-link @click="mobileMenuOpen = false" to="/history" class="flex items-center text-gray-700 hover:text-purple-600 transition-all font-semibold px-4 py-3 rounded-lg hover:bg-purple-50 group">
+            <ClockIconNav class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
+            My Activity
+          </router-link>
+          <router-link @click="mobileMenuOpen = false" to="/docs" class="flex items-center text-gray-700 hover:text-blue-600 transition-all font-semibold px-4 py-3 rounded-lg hover:bg-blue-50 group">
+            <BookOpenIcon class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
+            Docs
+          </router-link>
+          <router-link @click="mobileMenuOpen = false" to="/faq" class="flex items-center text-gray-700 hover:text-green-600 transition-all font-semibold px-4 py-3 rounded-lg hover:bg-green-50 group">
+            <HelpCircleIcon class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
+            FAQ
+          </router-link>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Error Content -->
+    <div class="flex items-center justify-center px-4 py-8 relative overflow-hidden" style="min-height: calc(100vh - 80px);">
     <!-- Background Animation -->
     <div class="absolute inset-0 flex items-center justify-center opacity-20">
       <Vue3Lottie
@@ -114,23 +197,34 @@
         </div>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
 import { Vue3Lottie } from 'vue3-lottie';
-import { 
-  AlertTriangle, 
-  RefreshCw, 
-  Home, 
+import {
+  AlertTriangle,
+  RefreshCw,
+  Home,
   Lightbulb,
   Trash2,
   Clock,
   MessageCircle,
-  ChevronDown
+  ChevronDown,
+  Home as HomeIcon,
+  Upload as UploadIcon,
+  Download as DownloadIcon,
+  Clock as ClockIconNav,
+  BookOpen as BookOpenIcon,
+  HelpCircle as HelpCircleIcon
 } from 'lucide-vue-next';
 import ErrorAnimation from '../../../../animations/Error.json';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+const mobileMenuOpen = ref(false);
 
 interface Props {
   errorCode?: string | number;
@@ -158,6 +252,21 @@ const duckMessages = [
 
 const wittyMessage = ref(duckMessages[Math.floor(Math.random() * duckMessages.length)]);
 const showTroubleshooting = ref(false);
+
+// Scroll to upload section
+const scrollToUpload = () => {
+  if (router.currentRoute.value.path !== '/') {
+    router.push('/').then(() => {
+      setTimeout(() => {
+        const uploadSection = document.querySelector('#upload');
+        uploadSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    });
+  } else {
+    const uploadSection = document.querySelector('#upload');
+    uploadSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+};
 
 const reloadPage = () => {
   window.location.reload();
