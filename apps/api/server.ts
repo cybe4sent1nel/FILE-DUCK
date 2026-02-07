@@ -51,6 +51,7 @@ const getScanBeforeDownloadHandler = async () => (await import('./api/scan-befor
 const getScanHandler = async () => (await import('./api/scan.js')).default;
 const getDeleteFileHandler = async () => (await import('./api/delete-file.js')).default;
 const getCleanupExpiredHandler = async () => (await import('./api/cleanup-expired.js')).default;
+const getMetadataHandler = async () => (await import('./api/get-metadata.js')).default;
 
 // Routes - compatible with both Express and Vercel
 app.get('/api/health', async (req: Request, res: Response) => {
@@ -156,6 +157,16 @@ app.delete('/api/delete-file', async (req: Request, res: Response) => {
 app.post('/api/cleanup-expired', async (req: Request, res: Response) => {
   try {
     await (await getCleanupExpiredHandler())(req as any, res as any);
+  } catch (error: any) {
+    if (!res.headersSent) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+});
+
+app.post('/api/get-metadata', async (req: Request, res: Response) => {
+  try {
+    await (await getMetadataHandler())(req as any, res as any);
   } catch (error: any) {
     if (!res.headersSent) {
       res.status(500).json({ error: error.message });
