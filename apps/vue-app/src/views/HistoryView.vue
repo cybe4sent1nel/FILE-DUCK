@@ -63,13 +63,23 @@
                 <p class="text-purple-100 text-sm">{{ uploads.length }} file{{ uploads.length !== 1 ? 's' : '' }} uploaded</p>
               </div>
             </div>
-            <button
-              @click="confirmClearUploads"
-              class="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
-            >
-              <Trash2Icon class="w-4 h-4" />
-              <span>Clear Uploads</span>
-            </button>
+            <div class="flex gap-2">
+              <button
+                @click="syncUploadMetadata"
+                class="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
+                title="Refresh status from server"
+              >
+                <RefreshCwIcon class="w-4 h-4" />
+                <span>Refresh</span>
+              </button>
+              <button
+                @click="confirmClearUploads"
+                class="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
+              >
+                <Trash2Icon class="w-4 h-4" />
+                <span>Clear Uploads</span>
+              </button>
+            </div>
           </div>
 
           <!-- Important Notice -->
@@ -114,7 +124,7 @@
                     <div class="flex items-center space-x-4 text-sm text-gray-600 mt-1">
                       <span>{{ formatSize(item.size) }}</span>
                       <span>•</span>
-                      <span>{{ formatDate(item.uploadedAt) }}</span>
+                      <span>{{ formatDateTime12Hour(item.uploadedAt) }}</span>
                       <span>•</span>
                       <span :class="getExpiryClass(item)" class="flex items-center space-x-1">
                         <ClockLoader v-if="!isExpiredItem(item)" />
@@ -238,7 +248,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useNotifications } from '../composables/useNotifications';
 import { Vue3Lottie } from 'vue3-lottie';
-import { FileIcon, CopyIcon, Trash2Icon, UploadIcon, DownloadIcon, ActivityIcon } from 'lucide-vue-next';
+import { FileIcon, CopyIcon, Trash2Icon, UploadIcon, DownloadIcon, ActivityIcon, RefreshCwIcon } from 'lucide-vue-next';
 import ClockLoader from '../components/ClockLoader.vue';
 import {
   getUploadHistory,
@@ -259,6 +269,7 @@ const EmptyAnimation = FileStorageAnimation;
 const { success, confirm } = useNotifications();
 
 const history = ref<UploadHistoryItem[]>([]);
+const isSyncing = ref(false);
 const stats = ref({
   totalUploads: 0,
   activeUploads: 0,
@@ -275,22 +286,43 @@ const uploads = computed(() => history.value.filter(item => !item.activityType |
 const downloads = computed(() => history.value.filter(item => item.activityType === 'download'));
 
 let countdownInterval: NodeJS.Timeout;
+let syncInterval: NodeJS.Timeout;
 
 onMounted(() => {
   loadHistory();
   syncUploadMetadata();
+
   // Update countdown every second
   countdownInterval = setInterval(() => {
     // Force reactivity update for live countdown
     history.value = [...history.value];
   }, 1000);
+
+  // Sync metadata from server every 10 seconds to update badges
+  syncInterval = setInterval(() => {
+    syncUploadMetadata();
+  }, 10000);
+
+  // Sync when page becomes visible (user returns to tab)
+  document.addEventListener('visibilitychange', handleVisibilityChange);
 });
 
 onUnmounted(() => {
   if (countdownInterval) {
     clearInterval(countdownInterval);
   }
+  if (syncInterval) {
+    clearInterval(syncInterval);
+  }
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
 });
+
+function handleVisibilityChange() {
+  if (!document.hidden) {
+    // Page became visible - sync immediately
+    syncUploadMetadata();
+  }
+}
 
 async function loadHistory() {
   history.value = await getUploadHistory();
@@ -300,12 +332,14 @@ async function loadHistory() {
 
 // Sync upload metadata from server to get updated usesLeft
 async function syncUploadMetadata() {
+  if (isSyncing.value) return; // Prevent concurrent syncs
+
+  isSyncing.value = true;
   const uploadItems = uploads.value;
 
-  // Only sync active uploads (not expired by time)
-  const activeUploads = uploadItems.filter(item => item.expiresAt > Date.now());
-
-  for (const item of activeUploads) {
+  // Sync ALL uploads to ensure badges show correctly
+  // Don't filter by expiration - we need to sync even expired files
+  for (const item of uploadItems) {
     try {
       const metadata = await getFileMetadata(item.shareCode);
 
@@ -313,6 +347,7 @@ async function syncUploadMetadata() {
       await updateUploadHistory(item.shareCode, {
         usesLeft: metadata.usesLeft,
         expiresAt: metadata.expiresAt,
+        maxUses: metadata.maxUses,
       });
     } catch (error: any) {
       // If file not found (404), it means it was deleted or expired on server
@@ -323,11 +358,18 @@ async function syncUploadMetadata() {
         });
       }
       // Silently fail for other errors (like network issues)
+      console.log(`Sync skipped for ${item.shareCode}:`, error.message);
     }
   }
 
-  // Reload history after sync
+  // Reload history after sync to update UI
   await loadHistory();
+  isSyncing.value = false;
+
+  // Show success notification
+  if (uploadItems.length > 0) {
+    success(`✓ Refreshed ${uploadItems.length} file${uploadItems.length !== 1 ? 's' : ''}`);
+  }
 }
 
 function formatSize(bytes: number): string {
