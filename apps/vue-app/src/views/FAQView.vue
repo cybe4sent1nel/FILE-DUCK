@@ -306,8 +306,8 @@
               <span class="text-orange-600 mr-2">Q:</span> How long are files stored?
             </h3>
             <p class="text-gray-700 ml-6">
-              Files are stored for 24 hours or until they reach 10 downloads, whichever comes first.
-              After that, files are automatically deleted.
+              Files are stored for your selected time period (1 hour to 7 days) or until they reach your chosen download limit, whichever comes first.
+              Default settings are 24 hours and one-time download. After expiration, files are automatically deleted from our servers.
             </p>
           </div>
 
@@ -344,7 +344,7 @@
               <span class="text-orange-600 mr-2">Q:</span> What happens when my file expires?
             </h3>
             <p class="text-gray-700 ml-6">
-              When a file expires (after 24 hours or 10 downloads), it's permanently deleted from our servers
+              When a file expires (after your selected time or download limit is reached), it's permanently deleted from our servers
               and can no longer be downloaded. The share code becomes invalid.
             </p>
           </div>

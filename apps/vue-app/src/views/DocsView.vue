@@ -256,7 +256,7 @@
               Automatic Expiration
             </h3>
             <p class="text-gray-700">
-              Files automatically expire after 24 hours or after reaching the download limit (default: 10 downloads),
+              Files automatically expire after your selected time (1 hour to 7 days, default: 24 hours) or after reaching your chosen download limit (default: one-time download),
               ensuring your data doesn't remain accessible indefinitely.
             </p>
           </div>
@@ -327,7 +327,7 @@
               </li>
               <li class="flex items-center gap-2">
                 <img src="/expired-svgrepo-com.svg" alt="Expired" class="w-4 h-4 inline-block" />
-                <span class="inline-block bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">EXPIRED</span> - File has expired (24h passed)
+                <span class="inline-block bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">EXPIRED</span> - File has expired (time limit reached)
               </li>
             </ul>
           </div>
@@ -369,7 +369,7 @@
                 Time Limits
               </h3>
               <ul class="space-y-2 text-green-700">
-                <li><strong>Expiration:</strong> 24 hours after upload</li>
+                <li><strong>Options:</strong> 1h, 6h, 24h (default), 3 days, or 7 days (max)</li>
                 <li><strong>Countdown:</strong> Live timer in activity history</li>
                 <li><strong>Warning:</strong> Highlighted when < 1 hour remains</li>
               </ul>
@@ -381,7 +381,7 @@
                 Download Limits
               </h3>
               <ul class="space-y-2 text-purple-700">
-                <li><strong>Default:</strong> 10 downloads per file</li>
+                <li><strong>Options:</strong> 1 (default), 3, 5, 10, or unlimited downloads</li>
                 <li><strong>Tracking:</strong> Uses counter in activity</li>
                 <li><strong>Expiry:</strong> File deleted when limit reached</li>
               </ul>
@@ -480,7 +480,8 @@
               <HelpCircleIcon class="w-5 h-5 mr-2" />
               How long are files stored?
             </h3>
-            <p class="text-gray-700">Files are stored for 24 hours or until they reach 10 downloads, whichever comes first.</p>
+            <p class="text-gray-700">Files are stored for your selected time period (up to 7 days) or until they reach your chosen download limit, whichever comes first.
+            Default settings: 24 hours and one-time download.</p>
           </div>
 
           <div>

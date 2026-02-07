@@ -48,8 +48,8 @@ FileDuck features a beautiful, modern interface with:
 
 ### 🕵️ Privacy & Control
 - **One-Time Share Codes** - Atomic GET+DEL from Redis, 8-10 character Base62
-- **Download Limits** - Configurable (3/5/10/unlimited uses per file)
-- **Time-Limited Links** - Max 7-day TTL with automatic expiration
+- **Download Limits** - Configurable (1/3/5/10/unlimited uses per file, default: one-time)
+- **Time-Limited Links** - Max 7-day TTL with automatic expiration (default: 24 hours)
 - **No Sign-In Required** - Upload history stored locally in browser
 - **Live Countdown Timers** - Real-time expiration tracking with visual indicators
 - **Anonymous Activity Feed** - Redacted filenames for privacy in live stats
