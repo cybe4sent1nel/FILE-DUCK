@@ -360,10 +360,16 @@ async function syncUploadMetadata() {
       // If file not found (404), it means it was deleted or expired on server
       if (error.response?.status === 404) {
         console.log(`⚠️ File ${item.shareCode} not found on server - marking as expired`);
+
         // Mark as expired in local storage
         await updateUploadHistory(item.shareCode, {
           usesLeft: 0,
         });
+
+        // Verify the update worked
+        const verifyHistory = await getUploadHistory();
+        const verifyItem = verifyHistory.find(h => h.shareCode === item.shareCode);
+        console.log(`✓ Verified update: ${item.shareCode} now has usesLeft=${verifyItem?.usesLeft}`);
       } else {
         // Silently fail for other errors (like network issues)
         console.log(`⚠️ Sync skipped for ${item.shareCode}:`, error.message);
