@@ -188,20 +188,6 @@
               :key="item.shareCode + '-download'"
               class="bg-gradient-to-r from-teal-50 to-white rounded-xl p-6 shadow-md border border-teal-100 hover:shadow-lg transition-all relative"
             >
-              <!-- Expired/Limit Badges for downloads -->
-              <div v-if="item.expiresAt && isExpiredItem(item)" class="absolute top-0 right-0">
-                <!-- Show EXPIRED if time ran out (takes priority) -->
-                <span v-if="isExpiredByTime(item.expiresAt)" class="bg-red-500 text-white px-4 py-1 rounded-bl-xl rounded-tr-xl font-bold text-sm shadow-lg flex items-center gap-2">
-                  <img src="/expired-svgrepo-com.svg" alt="Expired" class="w-4 h-4 inline-block" />
-                  EXPIRED
-                </span>
-                <!-- Show LIMIT REACHED only if time hasn't expired yet but downloads hit zero -->
-                <span v-else-if="isExpiredByUses(item)" class="bg-orange-500 text-white px-4 py-1 rounded-bl-xl rounded-tr-xl font-bold text-sm shadow-lg flex items-center gap-2">
-                  <img src="/perimeter-limit-svgrepo-com.svg" alt="Limit" class="w-4 h-4 inline-block" />
-                  LIMIT REACHED
-                </span>
-              </div>
-
               <div class="flex items-center justify-between">
                 <!-- File Info -->
                 <div class="flex items-center space-x-4 flex-1">

@@ -439,25 +439,36 @@ const redeemCode = async () => {
     };
   } catch (err: any) {
     console.error('Redeem failed:', err);
-    
-    if (err.response?.data?.code === 'CAPTCHA_REQUIRED') {
+
+    const errorCode = err.response?.data?.code;
+    const errorMsg = err.response?.data?.error;
+
+    if (errorCode === 'EXPIRED') {
+      // File has expired (time limit reached)
+      errorMessage.value = 'This share code has expired. The file is no longer available.';
+      error('⏰ File Expired! The time limit for this file has been reached and it\'s no longer available for download.');
+    } else if (errorCode === 'NO_USES_LEFT') {
+      // Download limit reached (uses = 0)
+      errorMessage.value = 'Download limit reached. This file has been downloaded the maximum number of times.';
+      error('🚫 Download Limit Reached! This file has already been downloaded the maximum number of times and is no longer available.');
+    } else if (errorCode === 'CAPTCHA_REQUIRED') {
       captchaRequired.value = true;
       // Don't show error message - just show the captcha widget
       errorMessage.value = '';
-    } else if (err.response?.data?.code === 'CAPTCHA_INVALID') {
+    } else if (errorCode === 'CAPTCHA_INVALID') {
       captchaToken.value = '';
       // Force widget reload without showing error during transition
       captchaRequired.value = false;
-      setTimeout(() => { 
+      setTimeout(() => {
         captchaRequired.value = true;
         errorMessage.value = 'CAPTCHA verification failed or expired. Please complete it again.';
       }, 100);
-    } else if (err.response?.data?.code === 'SCAN_PENDING') {
+    } else if (errorCode === 'SCAN_PENDING') {
       errorMessage.value = 'File is being scanned for malware. Please try again in a moment.';
-    } else if (err.response?.data?.code === 'MALWARE_DETECTED') {
+    } else if (errorCode === 'MALWARE_DETECTED') {
       errorMessage.value = 'This file was flagged as malicious and has been removed.';
     } else {
-      errorMessage.value = err.response?.data?.error || 'Invalid or expired share code';
+      errorMessage.value = errorMsg || 'Invalid or expired share code';
     }
   } finally {
     isRedeeming.value = false;
