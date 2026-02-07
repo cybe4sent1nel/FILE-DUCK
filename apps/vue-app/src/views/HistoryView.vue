@@ -248,9 +248,10 @@ import {
   clearUploadHistory,
   clearUploadsOnly,
   clearDownloadsOnly,
+  updateUploadHistory,
   type UploadHistoryItem,
 } from '../services/uploadHistory';
-import { deleteFile } from '../services/api';
+import { deleteFile, getFileMetadata } from '../services/api';
 import { formatFileSize } from '@fileduck/shared';
 import FileStorageAnimation from '../../../../animations/File storage.json';
 
@@ -277,6 +278,7 @@ let countdownInterval: NodeJS.Timeout;
 
 onMounted(() => {
   loadHistory();
+  syncUploadMetadata();
   // Update countdown every second
   countdownInterval = setInterval(() => {
     // Force reactivity update for live countdown
@@ -294,6 +296,38 @@ async function loadHistory() {
   history.value = await getUploadHistory();
   stats.value = await getUploadStats();
   downloadStats.value = await getDownloadStats();
+}
+
+// Sync upload metadata from server to get updated usesLeft
+async function syncUploadMetadata() {
+  const uploadItems = uploads.value;
+
+  // Only sync active uploads (not expired by time)
+  const activeUploads = uploadItems.filter(item => item.expiresAt > Date.now());
+
+  for (const item of activeUploads) {
+    try {
+      const metadata = await getFileMetadata(item.shareCode);
+
+      // Update local storage with server data
+      await updateUploadHistory(item.shareCode, {
+        usesLeft: metadata.usesLeft,
+        expiresAt: metadata.expiresAt,
+      });
+    } catch (error: any) {
+      // If file not found (404), it means it was deleted or expired on server
+      if (error.response?.status === 404) {
+        // Mark as expired in local storage
+        await updateUploadHistory(item.shareCode, {
+          usesLeft: 0,
+        });
+      }
+      // Silently fail for other errors (like network issues)
+    }
+  }
+
+  // Reload history after sync
+  await loadHistory();
 }
 
 function formatSize(bytes: number): string {

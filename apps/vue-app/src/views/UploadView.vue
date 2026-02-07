@@ -349,11 +349,13 @@
         <div v-if="isUploading || isPaused" class="space-y-5 bg-white rounded-xl p-8 border border-purple-100">
           <div class="flex justify-center">
             <Vue3Lottie
+              ref="uploadLottieRef"
               :animationData="FileStorageAnimation"
               :height="140"
               :width="140"
               :loop="true"
               :autoplay="!isPaused"
+              :paused="isPaused"
             />
           </div>
           <div class="space-y-3">
@@ -366,10 +368,11 @@
             </div>
             <div class="w-full h-5 rail-track relative p-[2px]">
               <div
-                class="h-full plasma-fill rounded-sm transition-all duration-150 ease-linear"
+                class="h-full plasma-fill rounded-sm"
+                :class="{ 'progress-bar-animated': !isPaused, 'progress-bar-paused': isPaused }"
                 :style="{ width: uploadProgress + '%' }"
               >
-                <div v-if="uploadProgress > 0" class="fusion-head"></div>
+                <div v-if="uploadProgress > 0 && !isPaused" class="fusion-head"></div>
               </div>
             </div>
             <!-- Upload Stats -->
@@ -378,23 +381,28 @@
               <span>{{ timeRemaining }}</span>
             </div>
             <!-- Pause/Resume Button -->
-            <div class="flex justify-center gap-3 mt-4">
-              <button
-                v-if="!isPaused"
-                @click="pauseUpload"
-                class="px-6 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
-              >
-                <PauseIcon class="w-5 h-5" />
-                <span>Pause</span>
-              </button>
-              <button
-                v-else
-                @click="resumeUpload"
-                class="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
-              >
-                <PlayIcon class="w-5 h-5" />
-                <span>Resume</span>
-              </button>
+            <div class="flex flex-col items-center gap-2 mt-4">
+              <div class="flex gap-3">
+                <button
+                  v-if="!isPaused"
+                  @click="pauseUpload"
+                  class="px-6 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
+                >
+                  <PauseIcon class="w-5 h-5" />
+                  <span>Pause</span>
+                </button>
+                <button
+                  v-else
+                  @click="resumeUpload"
+                  class="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
+                >
+                  <PlayIcon class="w-5 h-5" />
+                  <span>Resume</span>
+                </button>
+              </div>
+              <p v-if="isPaused" class="text-xs text-gray-500 text-center">
+                ✓ Progress saved - Resume will continue from where you left off
+              </p>
             </div>
           </div>
         </div>
@@ -628,6 +636,15 @@ import {
 import { computeSHA256, formatFileSize, formatTimeRemaining } from '@fileduck/shared';
 import { uploadFileMeta, uploadToS3, scanFileBeforeUpload } from '../services/api';
 import { addToUploadHistory, requestPersistentStorage } from '../services/uploadHistory';
+import {
+  saveResumableUploadState,
+  getResumableUploadState,
+  deleteResumableUploadState,
+  markChunkUploaded,
+  isChunkUploaded,
+  setUploadPaused,
+  type ResumableUploadState
+} from '../services/resumableUpload';
 
 const { success, error } = useNotifications();
 
@@ -641,6 +658,7 @@ import DesignerCatAnimation from '../../../../animations/Designer cat.json';
 import StressedWomanAnimation from '../../../../animations/Stressed Woman at work.json';
 
 const fileInput = ref<HTMLInputElement | null>(null);
+const uploadLottieRef = ref<any>(null);
 const selectedFile = ref<File | null>(null);
 const sha256Hash = ref('');
 const verificationCode = ref('');
@@ -711,7 +729,20 @@ const processFile = async (file: File) => {
     // Compute SHA-256 hash
     const hash = await computeSHA256(file);
     sha256Hash.value = hash;
-    
+
+    // Check if there's a resumable upload state for this file
+    const existingState = getResumableUploadState(hash);
+    if (existingState && existingState.shareCode) {
+      // File was previously being uploaded
+      uploadProgress.value = existingState.uploadProgress;
+      shareCode.value = existingState.shareCode;
+      isPaused.value = true; // Start in paused state so user can choose to resume
+
+      // Show notification
+      success(`📁 Found previous upload at ${existingState.uploadProgress}% - Click Resume to continue`);
+      return;
+    }
+
     // Default: disable scanning for large files (>50MB)
     enableScan.value = file.size <= 50 * 1024 * 1024;
 
@@ -790,19 +821,56 @@ const processFile = async (file: File) => {
 
 // Pause upload
 const pauseUpload = () => {
+  // Immediately abort network request
   if (uploadAbortController) {
     uploadAbortController.abort();
     uploadAbortController = null;
   }
+
+  // IMMEDIATELY freeze the state - no async operations
   isPaused.value = true;
+  isUploading.value = false;  // Stop the upload state
   uploadSpeed.value = '0 MB/s';
+  timeRemaining.value = '';
+
+  // Manually pause Lottie animation immediately
+  if (uploadLottieRef.value) {
+    try {
+      uploadLottieRef.value.pause();
+    } catch (e) {
+      // Silently fail if pause method not available
+    }
+  }
+
+  // Force Vue to update DOM immediately to freeze progress bar
+  // This ensures the CSS transition is removed before any more updates
+  Promise.resolve().then(() => {
+    // Save paused state after DOM update
+    if (sha256Hash.value) {
+      setUploadPaused(sha256Hash.value, true);
+    }
+  });
 };
 
 // Resume upload
 const resumeUpload = async () => {
+  if (!selectedFile.value || !sha256Hash.value) return;
+
   isPaused.value = false;
-  // The upload will continue from where it was paused
-  // This requires server-side support for resumable uploads
+
+  // Manually resume Lottie animation immediately
+  if (uploadLottieRef.value) {
+    try {
+      uploadLottieRef.value.play();
+    } catch (e) {
+      // Silently fail if play method not available
+    }
+  }
+
+  // Update paused state
+  setUploadPaused(sha256Hash.value, false);
+
+  // Continue upload from where it was paused
   await uploadFile();
 };
 
@@ -839,14 +907,28 @@ const updateUploadStats = (bytesUploaded: number) => {
 
 const uploadFile = async () => {
   if (!selectedFile.value || !sha256Hash.value) return;
-  if (isUploading.value) return; // Prevent double upload
-  
-  // Allow upload if scan is clean or skipped (for large files)
-  if (scanStatus.value !== 'clean' && scanStatus.value !== 'skipped') return;
+
+  // Check if this is a resume from an existing state
+  const existingState = getResumableUploadState(sha256Hash.value);
+  const isResuming = existingState && existingState.shareCode;
+
+  if (!isResuming) {
+    // Fresh upload - check scan status
+    if (isUploading.value) return; // Prevent double upload
+    if (scanStatus.value !== 'clean' && scanStatus.value !== 'skipped') return;
+  }
 
   isUploading.value = true;
-  uploadProgress.value = 0;
-  uploadComplete.value = false;
+
+  // Restore progress if resuming
+  if (isResuming) {
+    uploadProgress.value = existingState.uploadProgress;
+    shareCode.value = existingState.shareCode;
+  } else {
+    uploadProgress.value = 0;
+    uploadComplete.value = false;
+  }
+
   isPaused.value = false;
   uploadSpeed.value = '0 MB/s';
   timeRemaining.value = '';
@@ -855,104 +937,126 @@ const uploadFile = async () => {
   uploadAbortController = new AbortController();
 
   try {
-    // Request upload metadata and presigned URLs
-    const metaResponse = await uploadFileMeta({
-      filename: selectedFile.value.name,
-      size: selectedFile.value.size,
-      sha256: sha256Hash.value,
-      mimeType: selectedFile.value.type || 'application/octet-stream',
-      ttlHours: ttlHours.value,
-      maxUses: maxUses.value,
-      encrypted: enableEncryption.value,
-      scanSkipped: scanStatus.value === 'skipped', // Include skip-scan flag
-      requireCaptcha: requireCaptcha.value, // Include captcha requirement
-    });
+    // Request upload metadata (or reuse existing for resume)
+    if (!isResuming) {
+      const metaResponse = await uploadFileMeta({
+        filename: selectedFile.value.name,
+        size: selectedFile.value.size,
+        sha256: sha256Hash.value,
+        mimeType: selectedFile.value.type || 'application/octet-stream',
+        ttlHours: ttlHours.value,
+        maxUses: maxUses.value,
+        encrypted: enableEncryption.value,
+        scanSkipped: scanStatus.value === 'skipped',
+        requireCaptcha: requireCaptcha.value,
+      });
 
-    shareCode.value = metaResponse.shareCode;
-    expiresAt.value = metaResponse.expiresAt;
-
-    // Simulate upload progress (GitHub storage happens server-side during scan)
-    if (metaResponse.useGitHub || !metaResponse.uploadUrls || metaResponse.uploadUrls.length === 0) {
-      // GitHub storage - send file in chunks using FormData (avoid base64 bloat)
-      const CHUNK_SIZE = 8 * 1024 * 1024; // 8MB chunks (stays under Railway's 10MB limit)
-      const totalChunks = Math.ceil(selectedFile.value.size / CHUNK_SIZE);
-      
-      console.log(`📦 Uploading file in ${totalChunks} chunk(s)...`);
-      
-      for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-        const start = chunkIndex * CHUNK_SIZE;
-        const end = Math.min(start + CHUNK_SIZE, selectedFile.value.size);
-        const chunk = selectedFile.value.slice(start, end);
-        
-        console.log(`📤 Uploading chunk ${chunkIndex + 1}/${totalChunks} (${chunk.size} bytes)`);
-        
-        // Use FormData for direct binary upload (no base64 encoding)
-        const formData = new FormData();
-        formData.append('file', chunk, selectedFile.value.name);
-        formData.append('shareCode', shareCode.value);
-        formData.append('filename', selectedFile.value.name);
-        formData.append('sha256', sha256Hash.value);
-        formData.append('chunkIndex', chunkIndex.toString());
-        formData.append('totalChunks', totalChunks.toString());
-        formData.append('isLastChunk', (chunkIndex === totalChunks - 1).toString());
-        
-        // Calculate progress before sending
-        const progressBefore = Math.floor((chunkIndex / totalChunks) * 100);
-        const progressAfter = Math.floor(((chunkIndex + 1) / totalChunks) * 100);
-        
-        // Animate progress while uploading
-        let currentProgress = progressBefore;
-        const progressInterval = setInterval(() => {
-          if (currentProgress < progressAfter - 1) {
-            currentProgress++;
-            uploadProgress.value = currentProgress;
-          }
-        }, 50);
-        
-        // Send chunk to server
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/github-upload`, {
-          method: 'POST',
-          body: formData, // Send as multipart/form-data
-          signal: uploadAbortController?.signal,
-        });
-
-        clearInterval(progressInterval);
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          const errorMsg = errorData.message || `Server error: ${response.status}`;
-          throw new Error(errorMsg);
-        }
-
-        // Set progress to after value and update stats
-        uploadProgress.value = progressAfter;
-        const bytesUploaded = end;
-        updateUploadStats(bytesUploaded);
-        console.log(`✅ Chunk ${chunkIndex + 1}/${totalChunks} uploaded successfully (${uploadProgress.value}%)`);
-
-        // Small delay between chunks to avoid overwhelming the server
-        if (chunkIndex < totalChunks - 1) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-      }
-      
-      // Ensure progress reaches 100%
-      uploadProgress.value = 100;
-      console.log('✅ All chunks uploaded successfully!');
-    } else {
-      // S3 storage - use presigned URLs
-      await uploadToS3(
-        selectedFile.value,
-        metaResponse.uploadUrls,
-        metaResponse.uploadId,
-        (progress) => {
-          uploadProgress.value = Math.round(progress);
-        }
-      );
+      shareCode.value = metaResponse.shareCode;
+      expiresAt.value = metaResponse.expiresAt;
     }
 
+    // GitHub upload with resumable chunks
+    const CHUNK_SIZE = 8 * 1024 * 1024; // 8MB chunks
+    const totalChunks = Math.ceil(selectedFile.value.size / CHUNK_SIZE);
+
+    // Initialize or get existing upload state
+    let uploadState: ResumableUploadState;
+    if (isResuming) {
+      uploadState = existingState;
+    } else {
+      // Create new upload state
+      uploadState = {
+        shareCode: shareCode.value,
+        filename: selectedFile.value.name,
+        fileSize: selectedFile.value.size,
+        sha256: sha256Hash.value,
+        totalChunks,
+        uploadedChunks: Array.from({ length: totalChunks }, (_, i) => ({
+          chunkIndex: i,
+          uploaded: false,
+        })),
+        uploadProgress: 0,
+        lastUpdate: Date.now(),
+        isPaused: false,
+        uploadType: 'github',
+      };
+      saveResumableUploadState(sha256Hash.value, uploadState);
+    }
+
+    console.log(`📦 ${isResuming ? 'Resuming' : 'Starting'} upload: ${totalChunks} chunks total`);
+
+    // Upload chunks (skip already uploaded ones)
+    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+      // Reload state to ensure we have latest uploadedChunks info
+      uploadState = getResumableUploadState(sha256Hash.value)!;
+
+      // Check if chunk already uploaded
+      if (isChunkUploaded(sha256Hash.value, chunkIndex)) {
+        console.log(`✓ Chunk ${chunkIndex + 1}/${totalChunks} already uploaded, skipping`);
+
+        // Update progress for skipped chunks
+        const uploadedCount = uploadState.uploadedChunks.filter(c => c.uploaded).length;
+        uploadProgress.value = Math.floor((uploadedCount / totalChunks) * 100);
+
+        continue;
+      }
+
+      const start = chunkIndex * CHUNK_SIZE;
+      const end = Math.min(start + CHUNK_SIZE, selectedFile.value.size);
+      const chunk = selectedFile.value.slice(start, end);
+
+      console.log(`📤 Uploading chunk ${chunkIndex + 1}/${totalChunks} (${chunk.size} bytes)`);
+
+      // Use FormData for direct binary upload
+      const formData = new FormData();
+      formData.append('file', chunk, selectedFile.value.name);
+      formData.append('shareCode', shareCode.value);
+      formData.append('filename', selectedFile.value.name);
+      formData.append('sha256', sha256Hash.value);
+      formData.append('chunkIndex', chunkIndex.toString());
+      formData.append('totalChunks', totalChunks.toString());
+      formData.append('isLastChunk', (chunkIndex === totalChunks - 1).toString());
+
+      // Send chunk to server
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/github-upload`, {
+        method: 'POST',
+        body: formData,
+        signal: uploadAbortController?.signal,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMsg = errorData.message || `Server error: ${response.status}`;
+        throw new Error(errorMsg);
+      }
+
+      // Mark chunk as uploaded in state
+      markChunkUploaded(sha256Hash.value, chunkIndex);
+
+      // Reload state to get updated uploadedChunks array
+      uploadState = getResumableUploadState(sha256Hash.value)!;
+
+      // Update progress
+      const uploadedCount = uploadState.uploadedChunks.filter(c => c.uploaded).length;
+      uploadProgress.value = Math.floor((uploadedCount / totalChunks) * 100);
+      const bytesUploaded = chunkIndex * CHUNK_SIZE + chunk.size;
+      updateUploadStats(bytesUploaded);
+
+      console.log(`✅ Chunk ${chunkIndex + 1}/${totalChunks} uploaded (${uploadProgress.value}%)`);
+
+      // Small delay between chunks
+      if (chunkIndex < totalChunks - 1) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    // Ensure progress reaches 100%
     uploadProgress.value = 100;
-    
+    console.log('✅ All chunks uploaded successfully!');
+
+    // Clean up resumable state on completion
+    deleteResumableUploadState(sha256Hash.value);
+
     // Keep progress at 100% visible for a moment
     await new Promise(resolve => setTimeout(resolve, 1200));
     uploadComplete.value = true;
@@ -1013,6 +1117,11 @@ const uploadFile = async () => {
 };
 
 const resetForm = () => {
+  // Clean up resumable state if any
+  if (sha256Hash.value) {
+    deleteResumableUploadState(sha256Hash.value);
+  }
+
   selectedFile.value = null;
   sha256Hash.value = '';
   verificationCode.value = '';
@@ -1026,6 +1135,7 @@ const resetForm = () => {
   scanStatus.value = null;
   virusDetails.value = '';
   allowQuarantine.value = false;
+  isPaused.value = false;
 };
 
 // Simulate scanning (replace with actual API call)
@@ -1464,5 +1574,29 @@ select.input-field option:checked {
   background-color: #d9f99d;
   color: #365314;
   font-weight: 600;
+}
+
+/* Progress Bar Animation Control */
+.progress-bar-animated {
+  transition: width 0.15s ease-linear;
+  animation: none;
+}
+
+.progress-bar-paused {
+  /* Completely freeze all animations and transitions */
+  transition: none !important;
+  animation: none !important;
+  -webkit-transition: none !important;
+  -moz-transition: none !important;
+  -o-transition: none !important;
+  /* Prevent any running animations from continuing */
+  animation-play-state: paused !important;
+  -webkit-animation-play-state: paused !important;
+}
+
+/* Also freeze the fusion head animation when paused */
+.progress-bar-paused .fusion-head {
+  animation: none !important;
+  -webkit-animation: none !important;
 }
 </style>

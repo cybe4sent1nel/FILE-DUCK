@@ -35,6 +35,11 @@
       "methods": ["POST", "OPTIONS"]
     },
     {
+      "src": "/api/get-metadata",
+      "dest": "/apps/api/api/get-metadata.ts",
+      "methods": ["POST", "OPTIONS"]
+    },
+    {
       "src": "/api/health",
       "dest": "/apps/api/api/health.ts",
       "methods": ["GET", "OPTIONS"]

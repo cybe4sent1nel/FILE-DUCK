@@ -173,3 +173,18 @@ export async function deleteFile(shareCode: string): Promise<{ success: boolean;
   });
   return response.data;
 }
+
+export interface FileMetadata {
+  filename: string;
+  size: number;
+  expiresAt: number;
+  maxUses: number;
+  usesLeft: number;
+  uploadedAt: number;
+  scanStatus?: string;
+}
+
+export async function getFileMetadata(shareCode: string): Promise<FileMetadata> {
+  const response = await api.post('/get-metadata', { shareCode });
+  return response.data;
+}
