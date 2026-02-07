@@ -342,40 +342,48 @@ async function syncUploadMetadata() {
 
   console.log(`🔄 Syncing ${uploadItems.length} upload(s)...`);
 
+  // Collect all updates first
+  const updatePromises: Promise<void>[] = [];
+
   // Sync ALL uploads to ensure badges show correctly
   // Don't filter by expiration - we need to sync even expired files
   for (const item of uploadItems) {
-    try {
-      const metadata = await getFileMetadata(item.shareCode);
+    const updatePromise = (async () => {
+      try {
+        const metadata = await getFileMetadata(item.shareCode);
 
-      console.log(`✓ Synced ${item.shareCode}: usesLeft=${metadata.usesLeft}, maxUses=${metadata.maxUses}, expires=${new Date(metadata.expiresAt).toLocaleString()}`);
+        console.log(`✓ Synced ${item.shareCode}: usesLeft=${metadata.usesLeft}, maxUses=${metadata.maxUses}, expires=${new Date(metadata.expiresAt).toLocaleString()}`);
 
-      // Update local storage with server data
-      await updateUploadHistory(item.shareCode, {
-        usesLeft: metadata.usesLeft,
-        expiresAt: metadata.expiresAt,
-        maxUses: metadata.maxUses,
-      });
-    } catch (error: any) {
-      // If file not found (404), it means it was deleted or expired on server
-      if (error.response?.status === 404) {
-        console.log(`⚠️ File ${item.shareCode} not found on server - marking as expired`);
-
-        // Mark as expired in local storage
+        // Update local storage with server data
         await updateUploadHistory(item.shareCode, {
-          usesLeft: 0,
+          usesLeft: metadata.usesLeft,
+          expiresAt: metadata.expiresAt,
+          maxUses: metadata.maxUses,
         });
+      } catch (error: any) {
+        // If file not found (404), it means it was deleted or expired on server
+        if (error.response?.status === 404) {
+          console.log(`⚠️ File ${item.shareCode} not found on server - marking as expired`);
 
-        // Verify the update worked
-        const verifyHistory = await getUploadHistory();
-        const verifyItem = verifyHistory.find(h => h.shareCode === item.shareCode);
-        console.log(`✓ Verified update: ${item.shareCode} now has usesLeft=${verifyItem?.usesLeft}`);
-      } else {
-        // Silently fail for other errors (like network issues)
-        console.log(`⚠️ Sync skipped for ${item.shareCode}:`, error.message);
+          // Mark as expired in local storage
+          await updateUploadHistory(item.shareCode, {
+            usesLeft: 0,
+          });
+        } else {
+          // Silently fail for other errors (like network issues)
+          console.log(`⚠️ Sync skipped for ${item.shareCode}:`, error.message);
+        }
       }
-    }
+    })();
+
+    updatePromises.push(updatePromise);
   }
+
+  // Wait for ALL updates to complete before reloading
+  await Promise.all(updatePromises);
+
+  // Additional delay to ensure IndexedDB writes complete
+  await new Promise(resolve => setTimeout(resolve, 150));
 
   // Reload history after sync to update UI
   await loadHistory();

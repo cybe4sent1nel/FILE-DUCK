@@ -242,10 +242,10 @@
                 </span>
               </p>
               <p class="text-sm text-yellow-600 mb-3">
-                The file will be uploaded <strong>without virus scanning</strong>. Recipients will be warned that this file was not scanned.
+                The file will be uploaded <strong>without malware scanning</strong>. Recipients will be warned that this file was not scanned.
               </p>
               <p class="text-xs text-yellow-600">
-                💡 <strong>Tip:</strong> Files ≤32MB use VirusTotal. Files &gt;32MB use our large-file scanner. Files &gt;100MB skip scanning.
+                💡 <strong>Tip:</strong> Enable scanning toggle above to scan files before upload. Large files may take longer to scan.
               </p>
             </div>
           </div>
@@ -571,42 +571,42 @@
     <CTASection />
 
     <!-- Info Boxes -->
-    <div class="grid md:grid-cols-3 gap-8 mt-16 mb-12">
+    <div class="grid md:grid-cols-3 gap-6 mt-16 mb-12 max-w-6xl mx-auto">
       <!-- Malware Scanned Badge -->
-      <div class="bg-white rounded-3xl p-10 shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 border border-purple-100">
-        <div class="flex flex-col items-center text-center">
-          <div class="mb-6 w-full flex justify-center">
-            <img src="/malware scanned.png" alt="AI-Powered Malware Scanning" class="w-full max-w-[280px] h-auto object-contain" />
+      <div class="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all border border-purple-100 aspect-square flex flex-col">
+        <div class="flex-1 flex flex-col items-center justify-center text-center">
+          <div class="mb-4 w-full flex justify-center">
+            <img src="/malware scanned.png" alt="AI-Powered Malware Scanning" class="w-32 h-32 object-contain" />
           </div>
-          <h3 class="font-bold text-2xl text-gray-900 mb-3">AI-Powered Protection</h3>
-          <p class="text-base text-gray-600 leading-relaxed">
-            Every file is automatically scanned using advanced AI detection with 70+ antivirus engines to ensure complete safety before sharing.
+          <h3 class="font-bold text-lg text-gray-900 mb-2">AI-Powered Protection</h3>
+          <p class="text-sm text-gray-600 leading-relaxed">
+            Every file is scanned using advanced threat detection for complete safety.
           </p>
         </div>
       </div>
 
       <!-- Global CDN Badge -->
-      <div class="bg-white rounded-3xl p-10 shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 border border-yellow-100">
-        <div class="flex flex-col items-center text-center">
-          <div class="mb-6 w-full flex justify-center">
-            <img src="/cdn.png" alt="Global CDN Network" class="w-full max-w-[280px] h-auto object-contain" />
+      <div class="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all border border-yellow-100 aspect-square flex flex-col">
+        <div class="flex-1 flex flex-col items-center justify-center text-center">
+          <div class="mb-4 w-full flex justify-center">
+            <img src="/cdn.png" alt="Global CDN Network" class="w-32 h-32 object-contain" />
           </div>
-          <h3 class="font-bold text-2xl text-gray-900 mb-3">Lightning-Fast Delivery</h3>
-          <p class="text-base text-gray-600 leading-relaxed">
-            Powered by a global CDN network with servers worldwide, ensuring blazing-fast downloads from anywhere on the planet.
+          <h3 class="font-bold text-lg text-gray-900 mb-2">Lightning-Fast Delivery</h3>
+          <p class="text-sm text-gray-600 leading-relaxed">
+            Powered by global CDN with servers worldwide for blazing-fast downloads.
           </p>
         </div>
       </div>
 
       <!-- Privacy Badge -->
-      <div class="bg-white rounded-3xl p-10 shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 border border-purple-100">
-        <div class="flex flex-col items-center text-center">
-          <div class="mb-6 w-full flex justify-center">
-            <img src="/privacy.png" alt="Privacy-First Architecture" class="w-full max-w-[280px] h-auto object-contain" />
+      <div class="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all border border-purple-100 aspect-square flex flex-col">
+        <div class="flex-1 flex flex-col items-center justify-center text-center">
+          <div class="mb-4 w-full flex justify-center">
+            <img src="/privacy.png" alt="Privacy-First Architecture" class="w-32 h-32 object-contain" />
           </div>
-          <h3 class="font-bold text-2xl text-gray-900 mb-3">Privacy-First Design</h3>
-          <p class="text-base text-gray-600 leading-relaxed">
-            Zero-knowledge encryption, time-limited links, and no tracking. Your files remain completely private and secure at all times.
+          <h3 class="font-bold text-lg text-gray-900 mb-2">Privacy-First Design</h3>
+          <p class="text-sm text-gray-600 leading-relaxed">
+            Zero-knowledge encryption and time-limited links keep your files completely private.
           </p>
         </div>
       </div>
@@ -677,7 +677,7 @@ const virusDetails = ref('');
 const scanSkipReason = ref<'too_large' | 'user_disabled' | 'scanner_unavailable' | ''>('');
 const allowQuarantine = ref(false);
 const requireCaptcha = ref(false);
-const enableScan = ref(true);
+const enableScan = ref(false); // Scanning OFF by default
 
 // Pause/Resume state
 const isPaused = ref(false);
@@ -687,11 +687,11 @@ let uploadAbortController: AbortController | null = null;
 let lastProgressTime = Date.now();
 let lastProgressBytes = 0;
 
-// Watch file size changes to adjust scan toggle default
+// Watch file size changes - keep user's choice
 watch(selectedFile, (file) => {
   if (file) {
-    // Default to skip scan for large files (>50MB), otherwise enable
-    enableScan.value = file.size <= 50 * 1024 * 1024;
+    // Don't auto-change user's scanning preference
+    // User must explicitly enable or disable scanning
   }
 });
 
@@ -743,31 +743,21 @@ const processFile = async (file: File) => {
       return;
     }
 
-    // Default: disable scanning for large files (>50MB)
-    enableScan.value = file.size <= 50 * 1024 * 1024;
-
-    // Check if file is too large for scanning (>100MB)
-    const isTooLargeForScan = file.size > 100 * 1024 * 1024;
-    
     // Check if user disabled scanning
-    if (!enableScan.value || isTooLargeForScan) {
-      // File scanning is disabled or file is too large
-      if (isTooLargeForScan) {
-        console.warn('File too large for virus scanning (>100MB), skipping scan');
-        scanSkipReason.value = 'too_large';
-      } else {
-        console.warn('Scanning disabled by user (large file)');
-        scanSkipReason.value = 'user_disabled';
-      }
+    if (!enableScan.value) {
+      console.warn('Scanning disabled by user');
+      scanSkipReason.value = 'user_disabled';
       isScanning.value = false;
       scanStatus.value = 'skipped';
       return;
     }
-    
-    // Start pre-upload scan with VirusTotal
+
+    // Start pre-upload scan (uses appropriate scanner based on file size)
+    // Files ≤32MB use fast API-based scanning
+    // Files >32MB use ClamAV scanner
     isScanning.value = true;
     scanStatus.value = 'pending';
-    
+
     try {
       // Call actual scan API and ensure minimum scanning duration for UX
       const [scanResult] = await Promise.all([
@@ -794,21 +784,30 @@ const processFile = async (file: File) => {
     } catch (scanError: any) {
       console.error('Scan failed:', scanError);
       isScanning.value = false;
-      
-      // If scanner is not available, allow upload with warning
-      if (scanError.response?.status === 503 && scanError.response?.data?.code === 'SCANNER_UNAVAILABLE') {
-        console.warn('Large-file scanner unavailable, skipping scan');
+
+      // Handle different scan failure scenarios
+      if (scanError.response?.status === 413 || scanError.message?.includes('too large') || scanError.message?.includes('payload')) {
+        // File too large for scanning
+        console.warn('File too large for scanning');
+        scanStatus.value = 'malicious';
+        virusDetails.value = 'Scan error: This file is too large to scan. Our scanner cannot process files of this size.';
+      } else if (scanError.response?.status === 503 && scanError.response?.data?.code === 'SCANNER_UNAVAILABLE') {
+        // Scanner service unavailable
+        console.warn('Scanner unavailable, skipping scan');
         scanStatus.value = 'skipped';
         scanSkipReason.value = 'scanner_unavailable';
       } else if (scanError.code === 'ERR_NETWORK' || scanError.message?.includes('Network Error')) {
+        // Network error
         console.warn('Scanner service unavailable, proceeding without scan');
         scanStatus.value = 'skipped';
         scanSkipReason.value = 'scanner_unavailable';
-      } else if (scanError.response?.status === 413) {
-        console.warn('File too large for scanning, skipping scan');
-        scanStatus.value = 'skipped';
-        scanSkipReason.value = 'too_large';
+      } else if (scanError.response?.status === 504 || scanError.code === 'ECONNABORTED') {
+        // Timeout - likely too large
+        console.warn('Scan timeout - file too large');
+        scanStatus.value = 'malicious';
+        virusDetails.value = 'Scan error: Scanning timed out. The file is too large to scan.';
       } else {
+        // Other scan errors
         scanStatus.value = 'malicious';
         virusDetails.value = `Scan error: ${scanError.response?.data?.message || scanError.message || 'Unable to scan file. Please try again.'}`;
       }

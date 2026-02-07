@@ -209,8 +209,9 @@ export async function addToDownloadHistory(item: Partial<UploadHistoryItem>): Pr
 export async function updateUploadHistory(shareCode: string, updates: Partial<UploadHistoryItem>): Promise<void> {
   try {
     const history = await getUploadHistory();
-    const index = history.findIndex(item => item.shareCode === shareCode);
-    
+    // Find the UPLOAD entry (not download) with matching shareCode
+    const index = history.findIndex(item => item.shareCode === shareCode && (!item.activityType || item.activityType === 'upload'));
+
     if (index !== -1) {
       history[index] = { ...history[index], ...updates };
       await saveUploadHistory(history);

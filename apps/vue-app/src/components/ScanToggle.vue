@@ -8,15 +8,15 @@
         Enable malware scanning
       </label>
       <p class="text-xs text-gray-500 mt-1">
-        <span v-if="modelValue">File will be scanned for viruses (recommended)</span>
-        <span v-else>⚠️ Large files (>50MB) - scanning disabled by default</span>
+        <span v-if="modelValue">File will be scanned for threats before upload</span>
+        <span v-else>⚠️ Scanning disabled - File will not be checked for malware</span>
       </p>
     </div>
     <label class="switch">
-      <input 
-        class="toggle" 
-        type="checkbox" 
-        :checked="modelValue" 
+      <input
+        class="toggle"
+        type="checkbox"
+        :checked="modelValue"
         @change="$emit('update:modelValue', $event.target.checked)"
       />
       <span class="slider"></span>
